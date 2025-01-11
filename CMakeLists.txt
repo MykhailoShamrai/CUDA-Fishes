@@ -9,7 +9,13 @@ if (POLICY CMP0141)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
-project ("CUDA-Fishes")
+project ("CUDA-Fishes"  LANGUAGES CXX CUDA C)
+
+set(CMAKE_CUDA_ARCHITECTURES 50)
+
+include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
 # Include sub-projects.
-add_subdirectory ("CUDA-Fishes")
+add_subdirectory ("src")
+add_subdirectory ("third_party/glfw")
+add_subdirectory ("third_party/glad")

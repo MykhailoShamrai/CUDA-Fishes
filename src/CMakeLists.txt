@@ -3,12 +3,31 @@
 #
 
 # Add source to this project's executable.
-add_executable (CUDA-Fishes "main.cu")
+set(IMGUI_SOURCE_FILES	../third_party/imgui/imgui_impl_glfw.cpp
+						../third_party/imgui/imgui_impl_glfw.h
+						../third_party/imgui/imgui_impl_opengl3.cpp
+						../third_party/imgui/imgui_impl_opengl3.h
+						../third_party/imgui/imgui_impl_opengl3_loader.h
+						../third_party/imgui/imgui_draw.cpp
+						../third_party/imgui/imgui_internal.h
+						../third_party/imgui/imgui_stdlib.cpp
+						../third_party/imgui/imgui_stdlib.h
+						../third_party/imgui/imgui.cpp
+						../third_party/imgui/imgui.h
+						../third_party/imgui/imgui_demo.cpp
+						../third_party/imgui/imgui_tables.cpp
+						../third_party/imgui/imgui_widgets.cpp
+						../third_party/imgui/imconfig.h
+						../third_party/imgui/imstb_rectpack.h
+						../third_party/imgui/imstb_textedit.h
+						../third_party/imgui/imstb_truetype.h)
+
+add_executable (CUDA-Fishes "main.cu" ${IMGUI_SOURCE_FILES})
 
 target_include_directories(CUDA-Fishes PRIVATE 
-	../third_party/glfw)
+	../third_party/glfw/include ../third_party/glad/include ../third_party/imgui)
 target_link_libraries(CUDA-Fishes PRIVATE 
-	glfw glad ${CMAKE_CUDA_LIBRARIES})
+	glfw glad opengl32 ${CMAKE_CUDA_LIBRARIES})
 target_include_directories(CUDA-Fishes PRIVATE
 	"../third_party/glad/include" "../third_party/glfw/include")
 

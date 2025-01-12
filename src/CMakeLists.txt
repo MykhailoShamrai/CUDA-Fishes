@@ -22,14 +22,21 @@ set(IMGUI_SOURCE_FILES	../third_party/imgui/imgui_impl_glfw.cpp
 						../third_party/imgui/imstb_textedit.h
 						../third_party/imgui/imstb_truetype.h)
 
-add_executable (CUDA-Fishes "main.cu" ${IMGUI_SOURCE_FILES})
+add_executable (CUDA-Fishes "main.cu"
+					${IMGUI_SOURCE_FILES}
+					"../objects/fishes.cu"
+					"../objects/options.cu")
 
 target_include_directories(CUDA-Fishes PRIVATE 
-	../third_party/glfw/include ../third_party/glad/include ../third_party/imgui)
+	../third_party/glfw/include
+	../third_party/glad/include
+	../third_party/imgui
+	../include
+	../objects)
+
 target_link_libraries(CUDA-Fishes PRIVATE 
 	glfw glad opengl32 ${CMAKE_CUDA_LIBRARIES})
-target_include_directories(CUDA-Fishes PRIVATE
-	"../third_party/glad/include" "../third_party/glfw/include")
+
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
 CUDA_SEPARABLE_COMPILATION ON

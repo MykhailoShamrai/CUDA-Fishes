@@ -2,7 +2,7 @@
 
 struct Options
 {
-	float separation;
-	float alignment;
-	float cohesion;
+	float separationNormalFishes;
+	float alignmentNormalFishes;
+	float cohesionNormalFishes;
 };

@@ -2,18 +2,25 @@
 
 struct Fishes
 {
+private:
+	bool onGpu;
+	int n;
+	// Radius of visibility
+
+	void h_AllocateMemoryForFishes();
+	void d_AllocateMemoryForFishes();
+	void h_CleanMemoryForFishes();
+	void d_CleanMemoryForFishes();
+public:
+	Fishes(int n, bool onGpu);
+	~Fishes();
+
 	enum FishType
 	{
 		NormalFish,
 		LeaderOfNormalFishes,
 		Predator
 	};
-	int N;
-
-	// Radius of visibility
-	float radius;
-	// Angle of visibility
-	float angle;
 
 	float* x_before_movement;
 	float* y_before_movement;
@@ -27,11 +34,7 @@ struct Fishes
 
 	FishType* types;
 
-	void h_allocate_memory_for_fishes();
-	void d_allocate_memory_for_fishes();
-	void h_clean_memory_for_fishes();
-	void d_clean_memory_for_fishes();
-
+	
 	enum FishType
 	{
 		NormalFish,

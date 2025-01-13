@@ -2,20 +2,31 @@
 #include <stdlib.h>
 #include <cuda_runtime.h>
 #include "../include/helpers.cuh"
+#include <assert.h>
+#include <thrust/transform.h>
+#include <thrust/functional.h>
+#include <thrust/execution_policy.h>
 
 
 Grid::Grid(int nFishes, int radiusForFishes, int width, int heith, bool onGpu):
 	onGpu(onGpu), n_fishes(nFishes)
 {
 	// TODO: Firstly count how many cells there is
+	int cellSize = radiusForFishes * 2;
+	
+	// One cell has width = 2 * radius and height = 2 * radius
+
+	this->n_x_cells = (width + width - 1) / cellSize;
+	this->n_y_cells = (heith + heith - 1) / cellSize;
+	this->n_cells = n_x_cells * n_y_cells;
 
 	if (onGpu)
 	{
-		
+		d_AllocateMemory();
 	}
 	else
 	{
-
+		h_AllocateMemory();
 	}
 }
 
@@ -30,6 +41,13 @@ Grid::~Grid()
 		h_CleanMemory();
 	}
 }
+
+void Grid::FindCellsForFishes(Fishes fishes)
+{
+
+}
+
+
 
 void Grid::h_AllocateMemory()
 {

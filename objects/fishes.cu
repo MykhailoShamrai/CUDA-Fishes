@@ -1,6 +1,5 @@
 #include "fishes.cuh"
 #include <stdlib.h>
-#include <cuda_runtime.h>
 #include "../include/helpers.cuh"
 #include "../third_party/cuda-samples/helper_math.h"
 

@@ -1,10 +1,15 @@
 #pragma once 
 #include "fishes.cuh"
+#include <cuda_runtime.h>
 struct Grid
 {
 private:
 	bool onGpu;
-	int n_cells; // Number of cells 
+	const 
+	// Number of cells
+	int n_x_cells;
+	int n_y_cells;
+	int n_cells;
 	int n_fishes;
 	void h_AllocateMemory();
 	void d_AllocateMemory();

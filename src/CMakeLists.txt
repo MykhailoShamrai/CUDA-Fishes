@@ -32,6 +32,7 @@ target_include_directories(CUDA-Fishes PRIVATE
 	../third_party/glfw/include
 	../third_party/glad/include
 	../third_party/imgui
+	../third_party/cuda-samples
 	../include
 	../objects)
 

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <cuda_runtime.h>
 #include "../include/helpers.cuh"
+#include "../third_party/cuda-samples/helper_math.h"
 
 
 Fishes::Fishes(int n, bool onGpu): n(n), onGpu(onGpu)
@@ -86,4 +87,44 @@ void Fishes::d_CleanMemoryForFishes()
 	checkCudaErrors(cudaFree(this->y_vel_after_movement));
 
 	checkCudaErrors(cudaFree(this->types));
+}
+
+void Fishes::GenerateRandomFishes(int width, int height, float minVel, float maxVel)
+{
+	int highWidth = float(width) / 2;
+	int lowWidht = -highWidth;
+	int highHeight = float(height) / 2;
+	int lowHeight = float(height) / 2;
+	for (int i = 0; i < this->n; i++)
+	{
+		this->x_before_movement[i] = rand_float(lowWidht, highWidth);
+		this->y_before_movement[i] = rand_float(lowHeight, highHeight);
+		// Random normal vector in 2D
+		float2 vel = float2();
+		vel.x = rand_float(-1.0f, 1.0f);
+		vel.y = sqrtf(1.0f - vel.x * vel.x);
+		if (rand_float(0.0f, 1.0f) < 0.5f)
+		{
+			vel.y = -vel.y;
+		}
+		float velValue = rand_float(minVel, maxVel);
+		vel *= velValue;
+		this->x_vel_before_movement[i] = vel.x;
+		this->y_vel_before_movement[i] = vel.y;
+		// TODO: At this moment hardcoded NormalFishes
+		this->types[i] = FishType::NormalFish;
+	}
+}
+
+void Fishes::GenerateTestFishes()
+{
+	// I'll generate test 20 fishes with same velocity 1 and same vectors of velocity
+	for (int i = 0; i < 20; i++)
+	{
+		this->x_before_movement[i] = -100 + i * 10;
+		this->y_before_movement[i] = -100 + i * 10;
+		this->x_vel_before_movement[i] = 10 * 0.5f;
+		this->y_vel_before_movement[i] = 10 * sqrtf(0.75);
+		this->types[i] = FishType::NormalFish;
+	}
 }

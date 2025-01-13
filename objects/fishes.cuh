@@ -41,4 +41,7 @@ public:
 		LeaderOfNormalFishes,
 		Predator
 	};
+
+	void GenerateRandomFishes(int width, int height, float minVel, float maxVel);
+	void GenerateTestFishes();
 };

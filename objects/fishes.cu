@@ -127,3 +127,17 @@ void Fishes::GenerateTestFishes()
 		this->types[i] = FishType::NormalFish;
 	}
 }
+
+void Fishes::d_CopyFishesFromCPU(float* x_before_movement, float* y_before_movement, float* x_vel_before_movement,
+	float* y_vel_before_movement, FishType* types)
+{
+	if (onGpu)
+	{
+		checkCudaErrors(cudaMemcpy(this->x_before_movement, x_before_movement, n, cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(this->y_before_movement, y_before_movement, n, cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(this->x_vel_before_movement, x_vel_before_movement, n, cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(this->y_vel_before_movement, y_vel_before_movement, n, cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(this->types, types, n, cudaMemcpyHostToDevice));
+	}
+}
+

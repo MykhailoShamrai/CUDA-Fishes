@@ -69,7 +69,7 @@ void Grid::InitialiseArraysIndicesAndFishes()
 void Grid::FindCellsForFishes(Fishes fishes)
 {
 	CellForFishFunctor func = CellForFishFunctor(fishes.x_before_movement,
-		fishes.y_before_movement, cellSize, width, height);
+		fishes.y_before_movement, cellSize, width, height, n_x_cells, n_y_cells);
 	QuarterForFishFunctor funcQ = QuarterForFishFunctor(fishes.x_before_movement,
 		fishes.y_before_movement, cell_id, cellSize, width, height, n_x_cells, n_y_cells);
 	if (onGpu)

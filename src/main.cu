@@ -4,6 +4,13 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "../objects/fishes.cuh"
+#include "../objects/grid.cuh"
+
+#define NUMBER_OF_FISHES 20
+#define WIDTH 800
+#define HEIGHT 600
+
 
 using namespace std;
 
@@ -18,7 +25,7 @@ int main()
 		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);	
 	#endif
 
-	GLFWwindow* window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Fishes", NULL, NULL);
 	if (window == NULL)
 	{
 		cout << "Failed to create GLFW window" << endl;
@@ -42,6 +49,20 @@ int main()
 	
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init();
+
+	Fishes h_fishes = Fishes(NUMBER_OF_FISHES, false);
+	h_fishes.GenerateTestFishes();
+	Fishes d_fishes = Fishes(NUMBER_OF_FISHES, true);
+	d_fishes.d_CopyFishesFromCPU(h_fishes.x_before_movement, h_fishes.y_before_movement,
+		h_fishes.x_vel_before_movement, h_fishes.y_vel_before_movement, h_fishes.types);
+
+	Grid h_grid = Grid(NUMBER_OF_FISHES, 100, WIDTH, HEIGHT, false);
+	Grid d_grid = Grid(NUMBER_OF_FISHES, 100, WIDTH, HEIGHT, true);
+	h_grid.FindCellsForFishes(h_fishes);
+	assert(h_grid.cell_id[0] == 18);
+
+	// tests
+
 
 	while (!glfwWindowShouldClose(window))
 	{

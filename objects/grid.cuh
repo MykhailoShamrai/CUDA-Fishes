@@ -31,7 +31,6 @@ public:
 	int* cells_starts;
 	int* cells_ends;
 
-	// TODO: Init Variables
 	void InitialiseArraysIndicesAndFishes();
 	void FindCellsForFishes(Fishes fishes);
 	void SortCellsWithFishes();
@@ -46,9 +45,12 @@ private:
 	float sizeOfCell;
 	float width;
 	float height;
+	int nXCells;
+	int nYCells;
 public:
-	CellForFishFunctor(float* x_pos, float* y_pos, float sizeOfCell, float widht, float height) :
-		xPosition(x_pos), yPosition(y_pos), sizeOfCell(sizeOfCell), width(width), height(height) {};
+	CellForFishFunctor(float* x_pos, float* y_pos, float sizeOfCell, float widht, float height, int nXCells, int nYCells) :
+		xPosition(x_pos), yPosition(y_pos), sizeOfCell(sizeOfCell), width(width), height(height), nXCells(nXCells), 
+	nYCells(nYCells){};
 
 	__host__ __device__ int operator()(int& index)
 	{
@@ -58,7 +60,7 @@ public:
 		float transformed_y = y + height / 2;
 		int x_index = (transformed_x + transformed_x - 1) / sizeOfCell;
 		int y_index = (transformed_y + transformed_y - 1) / sizeOfCell;
-		return x_index * y_index;
+		return x_index + nXCells * y_index;
 	}
 };
 

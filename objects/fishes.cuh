@@ -35,15 +35,10 @@ public:
 
 	FishType* types;
 
-	
-	enum FishType
-	{
-		NormalFish,
-		LeaderOfNormalFishes,
-		Predator
-	};
 
 	void GenerateRandomFishes(int width, int height, float minVel, float maxVel);
 	void GenerateTestFishes();
+	void d_CopyFishesFromCPU(float* x_before_movement, float* y_before_movement,
+		float* x_vel_before_movement, float* y_vel_before_movement, FishType* types);
 };
 

@@ -8,7 +8,6 @@ private:
 	bool onGpu;
 	int n;
 	// Radius of visibility
-
 	void h_AllocateMemoryForFishes();
 	void d_AllocateMemoryForFishes();
 	void h_CleanMemoryForFishes();

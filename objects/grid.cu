@@ -6,13 +6,15 @@
 #include <thrust/transform.h>
 #include <thrust/functional.h>
 #include <thrust/execution_policy.h>
+#include <thrust/device_ptr.h>
+#include <thrust/sort.h>
 
 
 Grid::Grid(int nFishes, int radiusForFishes, int width, int heith, bool onGpu):
 	onGpu(onGpu), n_fishes(nFishes)
 {
 	// TODO: Firstly count how many cells there is
-	int cellSize = radiusForFishes * 2;
+	cellSize = radiusForFishes * 2;
 	
 	// One cell has width = 2 * radius and height = 2 * radius
 
@@ -44,43 +46,84 @@ Grid::~Grid()
 
 void Grid::FindCellsForFishes(Fishes fishes)
 {
-
+	CellForFishFunctor func = CellForFishFunctor(fishes.x_before_movement,
+		fishes.y_before_movement, cellSize, width, height);
+	if (onGpu)
+	{
+		auto dev_ptr_cell_id = thrust::device_pointer_cast(cell_id);
+		auto dev_ptr_indices = thrust::device_pointer_cast(indices);
+		thrust::transform(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, dev_ptr_cell_id, func);
+	}
+	else
+	{
+		thrust::transform(thrust::host, indices, indices + n_fishes, cell_id, func);
+	}
 }
 
+void Grid::SortCellsWithFishes()
+{
+	if (onGpu)
+	{
+		auto dev_ptr_cell_id = thrust::device_pointer_cast(cell_id);
+		auto dev_ptr_fish_id = thrust::device_pointer_cast(fish_id);
+		thrust::sort_by_key(thrust::device, dev_ptr_cell_id, dev_ptr_cell_id + n_fishes, dev_ptr_fish_id);
+	}
+	else
+	{
+		thrust::sort_by_key(thrust::host, cell_id, cell_id + n_fishes, fish_id);
+	}
+}
 
+void Grid::FindStartsAndEnds()
+{
+	FindStartsAndEndsFunctor func = FindStartsAndEndsFunctor(n_fishes, cells_starts, cells_ends, cell_id);
+	if (onGpu)
+	{
+		auto dev_ptr_indices = thrust::device_pointer_cast(indices);
+		thrust::transform(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, dev_ptr_indices, func);
+	}
+	else
+	{
+		thrust::transform(thrust::host, indices, indices + n_fishes, indices, func);
+	}
+}
 
 void Grid::h_AllocateMemory()
 {
 	// Allocate array of ints size number of fishes
-	this->cell_id = (int*)malloc(sizeof(int) * this->n_fishes);
+	cell_id = (int*)malloc(sizeof(int) * n_fishes);
 	// Allocate array of ints size number of fishes
-	this->fish_id - (int*)malloc(sizeof(int) * this->n_fishes);
+	fish_id - (int*)malloc(sizeof(int) * n_fishes);
 	// Allocate array of ints size number of cells
-	this->cells_starts = (int*)malloc(sizeof(int) * this->n_cells);
+	cells_starts = (int*)malloc(sizeof(int) * n_cells);
 	// Allocate array if ints size number of cells
-	this->cells_ends = (int*)malloc(sizeof(int) * this->n_cells);
+	cells_ends = (int*)malloc(sizeof(int) * n_cells);
+	indices = (int*)malloc(sizeof(int) * n_fishes);
 }
 
 void Grid::d_AllocateMemory()
 {
-	checkCudaErrors(cudaMalloc((void**)&this->cell_id, sizeof(int) * this->n_fishes));
-	checkCudaErrors(cudaMalloc((void**)&this->fish_id, sizeof(int) * this->n_fishes));
-	checkCudaErrors(cudaMalloc((void**)&this->cells_starts, sizeof(int) * this->n_cells));
-	checkCudaErrors(cudaMalloc((void**)&this->cells_ends, sizeof(int) * this->n_cells));	
+	checkCudaErrors(cudaMalloc((void**)&cell_id, sizeof(int) * n_fishes));
+	checkCudaErrors(cudaMalloc((void**)&fish_id, sizeof(int) * n_fishes));
+	checkCudaErrors(cudaMalloc((void**)&cells_starts, sizeof(int) * n_cells));
+	checkCudaErrors(cudaMalloc((void**)&cells_ends, sizeof(int) * n_cells));
+	checkCudaErrors(cudaMalloc((void**)&indices, sizeof(int) * n_fishes));
 }
 
 void Grid::h_CleanMemory()
 {
-	free(this->cell_id);
-	free(this->fish_id);
-	free(this->cells_starts);
-	free(this->cells_ends);	
+	free(cell_id);
+	free(fish_id);
+	free(cells_starts);
+	free(cells_ends);
+	free(indices);
 }
 
 void Grid::d_CleanMemory()
 {
-	checkCudaErrors(cudaFree(this->cell_id));
-	checkCudaErrors(cudaFree(this->fish_id));
-	checkCudaErrors(cudaFree(this->cells_starts));
-	checkCudaErrors(cudaFree(this->cells_ends));	
+	checkCudaErrors(cudaFree(cell_id));
+	checkCudaErrors(cudaFree(fish_id));
+	checkCudaErrors(cudaFree(cells_starts));
+	checkCudaErrors(cudaFree(cells_ends));
+	checkCudaErrors(cudaFree(indices));
 }

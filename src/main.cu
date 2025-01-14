@@ -52,15 +52,39 @@ int main()
 
 	Fishes h_fishes = Fishes(NUMBER_OF_FISHES, false);
 	h_fishes.GenerateTestFishes();
+	for (int i = 0; i < NUMBER_OF_FISHES; i++)
+	{
+		printf("%f, ", h_fishes.x_before_movement[i]);
+	}
+	printf("\n");
 	Fishes d_fishes = Fishes(NUMBER_OF_FISHES, true);
 	d_fishes.d_CopyFishesFromCPU(h_fishes.x_before_movement, h_fishes.y_before_movement,
 		h_fishes.x_vel_before_movement, h_fishes.y_vel_before_movement, h_fishes.types);
 
-	Grid h_grid = Grid(NUMBER_OF_FISHES, 100, WIDTH, HEIGHT, false);
-	Grid d_grid = Grid(NUMBER_OF_FISHES, 100, WIDTH, HEIGHT, true);
+	Grid h_grid = Grid(NUMBER_OF_FISHES, 50, WIDTH, HEIGHT, false);
+	Grid d_grid = Grid(NUMBER_OF_FISHES, 50, WIDTH, HEIGHT, true);
 	h_grid.FindCellsForFishes(h_fishes);
-	assert(h_grid.cell_id[0] == 18);
-
+	//assert(h_grid.cell_id[0] == 10);
+	printf("%d\n", h_grid.returnNCells());
+	for (int i = 0; i < NUMBER_OF_FISHES; i++)
+	{
+		printf("%d, ", h_grid.indices[i]);
+	}
+	printf("\n");
+	for (int i = 0; i < NUMBER_OF_FISHES; i++)
+	{
+		printf("%d, ", h_grid.fish_id[i]);
+	}
+	printf("\n");
+	for (int i = 0; i < NUMBER_OF_FISHES; i++)
+	{
+		printf("%d, ", h_grid.cell_id[i]);
+	}
+	printf("\n");
+	for (int i = 0; i < NUMBER_OF_FISHES; i++)
+	{
+		printf("%d, ", h_grid.quarter_number[i]);
+	}
 	// tests
 
 

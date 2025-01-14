@@ -11,16 +11,16 @@
 #include <thrust/copy.h>
 
 
-Grid::Grid(int nFishes, int radiusForFishes, int width, int heith, bool onGpu):
-	onGpu(onGpu), n_fishes(nFishes)
+Grid::Grid(int nFishes, int radiusForFishes, int width, int height, bool onGpu):
+	onGpu(onGpu), n_fishes(nFishes), width(width), height(height)
 {
 	// TODO: Firstly count how many cells there is
 	cellSize = radiusForFishes * 2;
 	
 	// One cell has width = 2 * radius and height = 2 * radius
 
-	this->n_x_cells = (width + width - 1) / cellSize;
-	this->n_y_cells = (heith + heith - 1) / cellSize;
+	this->n_x_cells = (width + cellSize - 1) / cellSize;
+	this->n_y_cells = (height + cellSize - 1) / cellSize;
 	this->n_cells = n_x_cells * n_y_cells;
 
 	if (onGpu)
@@ -31,6 +31,7 @@ Grid::Grid(int nFishes, int radiusForFishes, int width, int heith, bool onGpu):
 	{
 		h_AllocateMemory();
 	}
+	InitialiseArraysIndicesAndFishes();
 }
 
 Grid::~Grid()
@@ -59,7 +60,6 @@ void Grid::InitialiseArraysIndicesAndFishes()
 	}
 	else
 	{
-
 		thrust::transform(thrust::host, indices, indices + n_fishes, indices, func);
 		thrust::exclusive_scan(thrust::host, indices, indices + n_fishes, indices);
 		thrust::copy_n(thrust::host, indices, n_fishes, fish_id);
@@ -120,7 +120,7 @@ void Grid::h_AllocateMemory()
 	// Allocate array of ints size number of fishes
 	cell_id = (int*)malloc(sizeof(int) * n_fishes);
 	// Allocate array of ints size number of fishes
-	fish_id - (int*)malloc(sizeof(int) * n_fishes);
+	fish_id = (int*)malloc(sizeof(int) * n_fishes);
 	// Allocate array of ints size number of cells
 	cells_starts = (int*)malloc(sizeof(int) * n_cells);
 	// Allocate array if ints size number of cells

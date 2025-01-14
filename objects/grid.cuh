@@ -35,6 +35,11 @@ public:
 	void FindCellsForFishes(Fishes fishes);
 	void SortCellsWithFishes();
 	void FindStartsAndEnds();
+	int returnNCells()
+	{
+		return n_cells;
+	}
+
 };
 
 struct CellForFishFunctor
@@ -48,7 +53,7 @@ private:
 	int nXCells;
 	int nYCells;
 public:
-	CellForFishFunctor(float* x_pos, float* y_pos, float sizeOfCell, float widht, float height, int nXCells, int nYCells) :
+	CellForFishFunctor(float* x_pos, float* y_pos, float sizeOfCell, float width, float height, int nXCells, int nYCells) :
 		xPosition(x_pos), yPosition(y_pos), sizeOfCell(sizeOfCell), width(width), height(height), nXCells(nXCells), 
 	nYCells(nYCells){};
 
@@ -58,8 +63,8 @@ public:
 		float y = yPosition[index];
 		float transformed_x = x + width / 2;
 		float transformed_y = y + height / 2;
-		int x_index = (transformed_x + transformed_x - 1) / sizeOfCell;
-		int y_index = (transformed_y + transformed_y - 1) / sizeOfCell;
+		int x_index = (transformed_x) / sizeOfCell;
+		int y_index = (transformed_y) / sizeOfCell;
 		return x_index + nXCells * y_index;
 	}
 };
@@ -76,8 +81,9 @@ private:
 	int nXCells;
 	int nYCells;
 public:
-	QuarterForFishFunctor(float* x_pos, float* y_pos, int* cellId, int sizeofCell, int width, int height, int nXCells, int nYCells):
-		xPosition(x_pos), yPosition(y_pos), cellId(cellId), sizeOfCell(sizeofCell), width(width), height(height){}
+	QuarterForFishFunctor(float* x_pos, float* y_pos, int* cellId, int sizeofCell, int width,
+		int height, int nXCells, int nYCells): xPosition(x_pos), yPosition(y_pos), cellId(cellId),
+		sizeOfCell(sizeofCell), width(width), height(height), nXCells(nXCells), nYCells(nYCells){}
 
 	__host__ __device__ int operator()(int& index)
 	{
@@ -86,14 +92,14 @@ public:
 		float transformed_x = x + width / 2;
 		float transformed_y = y + height / 2;
 		int idOfCell = cellId[index];
-		int i = idOfCell / nXCells;
-		int j = idOfCell % nXCells;
-		int xCellStart = i * width;
-		int yCellStart = j * height;
+		int i = idOfCell % nXCells;
+		int j = idOfCell / nXCells;
+		int xCellStart = i * sizeOfCell;
+		int yCellStart = j * sizeOfCell;
 		// Quarters 2 and 3
-		if (transformed_x <= xCellStart + sizeOfCell / 2)
+		if (transformed_x <= (float)xCellStart + (float)sizeOfCell / 2)
 		{
-			if (transformed_y <= yCellStart + sizeOfCell / 2)
+			if (transformed_y <= (float)yCellStart + (float)sizeOfCell / 2)
 			{
 				return 2;
 			}
@@ -105,7 +111,7 @@ public:
 		// Quarters 1 and 4
 		else
 		{
-			if (transformed_y <= yCellStart + sizeOfCell / 2)
+			if (transformed_y <= (float)yCellStart + (float)sizeOfCell / 2)
 			{
 				return 1;
 			}
@@ -114,7 +120,6 @@ public:
 				return 4;
 			}
 		}
-
 	}
 };
 

@@ -25,13 +25,14 @@ public:
 
 	int* indices;
 	int* cell_id;
+	int* quarter_number;
 	int* fish_id;
-
 	// Starts and ends for cells
 	int* cells_starts;
 	int* cells_ends;
 
 	// TODO: Init Variables
+	void InitialiseArraysIndicesAndFishes();
 	void FindCellsForFishes(Fishes fishes);
 	void SortCellsWithFishes();
 	void FindStartsAndEnds();
@@ -61,6 +62,60 @@ public:
 	}
 };
 
+struct QuarterForFishFunctor
+{
+private:
+	float* xPosition;
+	float* yPosition;
+	int* cellId;
+	float sizeOfCell;
+	int width;
+	int height;
+	int nXCells;
+	int nYCells;
+public:
+	QuarterForFishFunctor(float* x_pos, float* y_pos, int* cellId, int sizeofCell, int width, int height, int nXCells, int nYCells):
+		xPosition(x_pos), yPosition(y_pos), cellId(cellId), sizeOfCell(sizeofCell), width(width), height(height){}
+
+	__host__ __device__ int operator()(int& index)
+	{
+		float x = xPosition[index];
+		float y = yPosition[index];
+		float transformed_x = x + width / 2;
+		float transformed_y = y + height / 2;
+		int idOfCell = cellId[index];
+		int i = idOfCell / nXCells;
+		int j = idOfCell % nXCells;
+		int xCellStart = i * width;
+		int yCellStart = j * height;
+		// Quarters 2 and 3
+		if (transformed_x <= xCellStart + sizeOfCell / 2)
+		{
+			if (transformed_y <= yCellStart + sizeOfCell / 2)
+			{
+				return 2;
+			}
+			else
+			{
+				return 3;
+			}
+		}
+		// Quarters 1 and 4
+		else
+		{
+			if (transformed_y <= yCellStart + sizeOfCell / 2)
+			{
+				return 1;
+			}
+			else
+			{
+				return 4;
+			}
+		}
+
+	}
+};
+
 struct FindStartsAndEndsFunctor
 {
 private:
@@ -84,6 +139,14 @@ public: FindStartsAndEndsFunctor(int nFishes, int* startsOfCells, int* endsOfCel
 			endsOfCells[sortedCells[index]] = index;
 		}
 		return index;
+	}
+};
+
+struct InitArraysFunctor
+{	
+	__host__ __device__ int operator()(int& index)
+	{
+		return 1;
 	}
 };
 

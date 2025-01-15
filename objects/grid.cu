@@ -9,6 +9,7 @@
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
 #include <thrust/copy.h>
+#include "fishes.cuh"
 
 
 Grid::Grid(int nFishes, int radiusForFishes, int width, int height, bool onGpu):
@@ -121,10 +122,7 @@ void Grid::CleanStartsAndEnds()
 	}
 }
 
-int Grid::ReturnNumberOfCells()
-{
-	return n_cells;
-}
+
 
 void Grid::h_AllocateMemory()
 {

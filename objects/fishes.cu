@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include "../include/helpers.cuh"
 #include "../third_party/cuda-samples/helper_math.h"
+#include "grid.cuh"
+#include "options.cuh"
 
 
 Fishes::Fishes(int n, bool onGpu): n(n), onGpu(onGpu)
@@ -129,4 +131,76 @@ void Fishes::d_CopyFishesFromCPU(float* x_before_movement, float* y_before_movem
 		checkCudaErrors(cudaMemcpy(this->types, types, n * sizeof(FishType), cudaMemcpyHostToDevice));
 	}
 }
+
+__host__ __device__ void Fishes::CountForAFish(int index, Grid* grid, Options* options)
+{
+	float maxVel = options->maxVelNormalFishes;
+	float minVel = options->minVelNormalFishes;
+	float cohesionNormal = options->cohesionNormalFishes;
+	float alignmentNormal = options->alignmentNormalFishes;
+	float separationNormal = options->separationNormalFishes;
+
+	int indexOfFish = grid->fish_id[index];
+	int indexOfCell = grid->cell_id[index];
+
+	int numberOfCells = grid->ReturnNumberOfCells();
+	int numberOfCells_x = grid->ReturnNumberOfCellsX();
+	int numberOfCells_y = grid->ReturnNumberOfCellsY();
+
+	int x_ind = indexOfCell % numberOfCells_x;
+	int y_ind = indexOfCell / numberOfCells_x;
+	// Four cells for each quarter
+	int cellsForSearch[4];
+	int quarterNumber = grid->quarter_number[index];
+	cellsForSearch[0] = indexOfCell;
+	int x1;
+	int x2;
+	int x3;
+	int y1;
+	int y2;
+	int y3;
+	int x_rr = (x_ind + 1) % numberOfCells_x;
+	int x_ll = (x_ind - 1) >= 0 ? x_ind - 1 : numberOfCells_x - 1;
+	int y_tt = (y_ind - 1) >= 0 ? y_ind - 1 : numberOfCells_y - 1;
+	int y_bb = (y_ind + 1) % numberOfCells_y;
+
+	switch (quarterNumber)
+	{
+	case 1:
+		x1 = x_rr;
+		y1 = y_ind;
+		x2 = x_rr;
+		y2 = y_tt;
+		x3 = x_ind;
+		y3 = y_tt;
+		break;
+	case 2:
+		x1 = x_ind;
+		y1 = y_tt;
+		x2 = x_ll;
+		y2 = y_tt;
+		x3 = x_ll;
+		y3 = y_ind;
+		break;
+	case 3:
+		x1 = x_ll;
+		y1 = y_ind;
+		x2 = x_ll;
+		y2 = y_bb;
+		x3 = x_ind;
+		y3 = y_bb;
+		break;
+	case 4:
+		x1 = x_ind;
+		y1 = y_bb;
+		x2 = x_rr;
+		y2 = y_bb;
+		x3 = x_rr;
+		y3 = y_ind;
+		break;
+	default:
+		break;
+	}
+}
+
 

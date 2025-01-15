@@ -1,6 +1,7 @@
 #pragma once 
-#include "fishes.cuh"
 #include <cuda_runtime.h>
+
+extern struct Fishes;
 
 struct Grid
 {
@@ -14,7 +15,6 @@ private:
 	int cellSize;
 	int width;
 	int height;
-	float width;
 	void h_AllocateMemory();
 	void d_AllocateMemory();
 
@@ -37,7 +37,11 @@ public:
 	void SortCellsWithFishes();
 	void FindStartsAndEnds();
 	void CleanStartsAndEnds();
-	int ReturnNumberOfCells();
+	__host__ __device__ int ReturnNumberOfCells() { return n_cells; };
+	__host__ __device__ int ReturnNumberOfCellsX() { return n_x_cells; };
+	__host__ __device__ int ReturnNumberOfCellsY() { return n_y_cells; };
+	__host__ __device__ int ReturnWidth() { return width; };
+	__host__ __device__ int ReturnHeight() { return height; };
 };
 
 struct CellForFishFunctor
@@ -46,6 +50,7 @@ private:
 	float* xPosition;
 	float* yPosition;
 	float sizeOfCell;
+	float width;
 	float height;
 	int nXCells;
 	int nYCells;

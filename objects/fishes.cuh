@@ -1,6 +1,8 @@
 #pragma once
 #include <cuda_runtime.h>
 
+extern struct Options;
+extern struct Grid;
 
 struct Fishes
 {

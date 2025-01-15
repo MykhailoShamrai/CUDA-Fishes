@@ -14,14 +14,13 @@ private:
 	int cellSize;
 	int width;
 	int height;
+	float width;
 	void h_AllocateMemory();
 	void d_AllocateMemory();
 
-	void h_CleanMemory();
-	void d_CleanMemory();
 public:
 	Grid(int nFishes, int radiusForFishes, int width, int heith, bool onGpu);
-	~Grid();
+	~Grid() {};
 
 	int* indices;
 	int* cell_id;
@@ -31,15 +30,14 @@ public:
 	int* cells_starts;
 	int* cells_ends;
 
+	void h_CleanMemory();
+	void d_CleanMemory();
 	void InitialiseArraysIndicesAndFishes();
 	void FindCellsForFishes(Fishes fishes);
 	void SortCellsWithFishes();
 	void FindStartsAndEnds();
-	int returnNCells()
-	{
-		return n_cells;
-	}
-
+	void CleanStartsAndEnds();
+	int ReturnNumberOfCells();
 };
 
 struct CellForFishFunctor
@@ -48,7 +46,6 @@ private:
 	float* xPosition;
 	float* yPosition;
 	float sizeOfCell;
-	float width;
 	float height;
 	int nXCells;
 	int nYCells;
@@ -136,12 +133,11 @@ public: FindStartsAndEndsFunctor(int nFishes, int* startsOfCells, int* endsOfCel
 
 	__host__ __device__ int operator()(int& index)
 	{
-
 		if (index == 0 || sortedCells[index - 1] != sortedCells[index])
 		{
 			startsOfCells[sortedCells[index]] = index;
 		}
-		else if (index == n_fishes - 1 || sortedCells[index + 1] != sortedCells[index])
+		if (index == n_fishes - 1 || sortedCells[index + 1] != sortedCells[index])
 		{
 			endsOfCells[sortedCells[index]] = index;
 		}
@@ -157,3 +153,10 @@ struct InitArraysFunctor
 	}
 };
 
+struct CleanStartsAndEndsFunctor
+{
+	__host__ __device__ int operator()(int& index)
+	{
+		return -1;
+	}
+};

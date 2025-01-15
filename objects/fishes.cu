@@ -16,17 +16,6 @@ Fishes::Fishes(int n, bool onGpu): n(n), onGpu(onGpu)
 	}
 }
 
-Fishes::~Fishes()
-{
-	if (onGpu)
-	{
-		d_CleanMemoryForFishes();
-	}
-	else
-	{
-		h_CleanMemoryForFishes();
-	}
-}
 
 void Fishes::h_AllocateMemoryForFishes()
 {
@@ -75,17 +64,17 @@ void Fishes::h_CleanMemoryForFishes()
 
 void Fishes::d_CleanMemoryForFishes()
 {
-	checkCudaErrors(cudaFree(this->x_before_movement));
-	checkCudaErrors(cudaFree(this->y_before_movement));
-	checkCudaErrors(cudaFree(this->x_vel_before_movement));
-	checkCudaErrors(cudaFree(this->y_vel_before_movement));
+	checkCudaErrors(cudaFree(x_before_movement));
+	checkCudaErrors(cudaFree(y_before_movement));
+	checkCudaErrors(cudaFree(x_vel_before_movement));
+	checkCudaErrors(cudaFree(y_vel_before_movement));
 
-	checkCudaErrors(cudaFree(this->x_after_movement));
-	checkCudaErrors(cudaFree(this->y_after_movement));
-	checkCudaErrors(cudaFree(this->x_vel_after_movement));
-	checkCudaErrors(cudaFree(this->y_vel_after_movement));
+	checkCudaErrors(cudaFree(x_after_movement));
+	checkCudaErrors(cudaFree(y_after_movement));
+	checkCudaErrors(cudaFree(x_vel_after_movement));
+	checkCudaErrors(cudaFree(y_vel_after_movement));
 
-	checkCudaErrors(cudaFree(this->types));
+	checkCudaErrors(cudaFree(types));
 }
 
 void Fishes::GenerateRandomFishes(int width, int height, float minVel, float maxVel)
@@ -120,8 +109,8 @@ void Fishes::GenerateTestFishes()
 	// I'll generate test 20 fishes with same velocity 1 and same vectors of velocity
 	for (int i = 0; i < 20; i++)
 	{
-		this->x_before_movement[i] = -100 + i * 10;
-		this->y_before_movement[i] = -100 + i * 10;
+		this->x_before_movement[i] = -100 + i * 10 - 1;
+		this->y_before_movement[i] = -100 + i * 10 - 1;
 		this->x_vel_before_movement[i] = 10 * 0.5f;
 		this->y_vel_before_movement[i] = 10 * sqrtf(0.75);
 		this->types[i] = FishType::NormalFish;
@@ -133,11 +122,11 @@ void Fishes::d_CopyFishesFromCPU(float* x_before_movement, float* y_before_movem
 {
 	if (onGpu)
 	{
-		checkCudaErrors(cudaMemcpy(this->x_before_movement, x_before_movement, n, cudaMemcpyHostToDevice));
-		checkCudaErrors(cudaMemcpy(this->y_before_movement, y_before_movement, n, cudaMemcpyHostToDevice));
-		checkCudaErrors(cudaMemcpy(this->x_vel_before_movement, x_vel_before_movement, n, cudaMemcpyHostToDevice));
-		checkCudaErrors(cudaMemcpy(this->y_vel_before_movement, y_vel_before_movement, n, cudaMemcpyHostToDevice));
-		checkCudaErrors(cudaMemcpy(this->types, types, n, cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(this->x_before_movement, x_before_movement, n * sizeof(float), cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(this->y_before_movement, y_before_movement, n * sizeof(float), cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(this->x_vel_before_movement, x_vel_before_movement, n * sizeof(float), cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(this->y_vel_before_movement, y_vel_before_movement, n * sizeof(float), cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(this->types, types, n * sizeof(FishType), cudaMemcpyHostToDevice));
 	}
 }
 

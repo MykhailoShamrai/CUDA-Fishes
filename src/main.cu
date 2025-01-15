@@ -6,11 +6,14 @@
 #include "imgui_impl_opengl3.h"
 #include "../objects/fishes.cuh"
 #include "../objects/grid.cuh"
+#include "../objects/options.cuh"
+#include "../include/helpers.cuh"
 
 #define NUMBER_OF_FISHES 20
 #define WIDTH 800
 #define HEIGHT 600
 
+bool withGpu = true;
 
 using namespace std;
 
@@ -61,32 +64,22 @@ int main()
 	d_fishes.d_CopyFishesFromCPU(h_fishes.x_before_movement, h_fishes.y_before_movement,
 		h_fishes.x_vel_before_movement, h_fishes.y_vel_before_movement, h_fishes.types);
 
-	Grid h_grid = Grid(NUMBER_OF_FISHES, 50, WIDTH, HEIGHT, false);
-	Grid d_grid = Grid(NUMBER_OF_FISHES, 50, WIDTH, HEIGHT, true);
-	h_grid.FindCellsForFishes(h_fishes);
-	//assert(h_grid.cell_id[0] == 10);
-	printf("%d\n", h_grid.returnNCells());
-	for (int i = 0; i < NUMBER_OF_FISHES; i++)
-	{
-		printf("%d, ", h_grid.indices[i]);
-	}
-	printf("\n");
-	for (int i = 0; i < NUMBER_OF_FISHES; i++)
-	{
-		printf("%d, ", h_grid.fish_id[i]);
-	}
-	printf("\n");
-	for (int i = 0; i < NUMBER_OF_FISHES; i++)
-	{
-		printf("%d, ", h_grid.cell_id[i]);
-	}
-	printf("\n");
-	for (int i = 0; i < NUMBER_OF_FISHES; i++)
-	{
-		printf("%d, ", h_grid.quarter_number[i]);
-	}
-	// tests
+	// TODO: Option struct
+	Options h_options = Options();
+	Options* d_options;
+	checkCudaErrors(cudaMalloc((void**)&d_options, sizeof(Options)));
 
+
+	Grid h_grid = Grid(NUMBER_OF_FISHES, h_options.radiusNormalFishes, WIDTH, HEIGHT, false);
+	Grid d_grid = Grid(NUMBER_OF_FISHES, h_options.radiusNormalFishes, WIDTH, HEIGHT, true);
+	h_grid.FindCellsForFishes(h_fishes);
+	d_grid.FindCellsForFishes(d_fishes);
+	h_grid.SortCellsWithFishes();
+	d_grid.SortCellsWithFishes();
+	h_grid.CleanStartsAndEnds();
+	d_grid.CleanStartsAndEnds();
+	h_grid.FindStartsAndEnds();
+	d_grid.FindStartsAndEnds();
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -98,12 +91,22 @@ int main()
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		if (withGpu)
+		{
+
+		}
+
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
+
+	d_fishes.d_CleanMemoryForFishes();
+	h_fishes.h_CleanMemoryForFishes();
+	d_grid.d_CleanMemory();
+	h_grid.h_CleanMemory();
 
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();

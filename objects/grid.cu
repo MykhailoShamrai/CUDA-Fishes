@@ -34,17 +34,6 @@ Grid::Grid(int nFishes, int radiusForFishes, int width, int height, bool onGpu):
 	InitialiseArraysIndicesAndFishes();
 }
 
-Grid::~Grid()
-{
-	if (onGpu)
-	{
-		d_CleanMemory();
-	}
-	else
-	{
-		h_CleanMemory();
-	}
-}
 
 void Grid::InitialiseArraysIndicesAndFishes()
 {
@@ -113,6 +102,28 @@ void Grid::FindStartsAndEnds()
 	{
 		thrust::transform(thrust::host, indices, indices + n_fishes, indices, func);
 	}
+}
+
+void Grid::CleanStartsAndEnds()
+{
+	CleanStartsAndEndsFunctor func = CleanStartsAndEndsFunctor();
+	if (onGpu)
+	{
+		auto dev_ptr_starts = thrust::device_pointer_cast(cells_starts);
+		auto dev_ptr_ends = thrust::device_pointer_cast(cells_ends);
+		thrust::transform(thrust::device, dev_ptr_starts, dev_ptr_starts + n_cells, dev_ptr_starts, func);
+		thrust::transform(thrust::device, dev_ptr_ends, dev_ptr_ends + n_cells, dev_ptr_ends, func);
+	}
+	else
+	{
+		thrust::transform(thrust::host, cells_starts, cells_starts + n_cells, cells_starts, func);
+		thrust::transform(thrust::host, cells_ends, cells_ends + n_cells, cells_ends, func);
+	}
+}
+
+int Grid::ReturnNumberOfCells()
+{
+	return n_cells;
 }
 
 void Grid::h_AllocateMemory()

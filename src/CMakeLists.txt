@@ -26,7 +26,8 @@ add_executable (CUDA-Fishes "main.cu"
 					${IMGUI_SOURCE_FILES}
 					"../objects/fishes.cu"
 					"../objects/grid.cu"
-					"../include/helpers.cu")
+					"../include/helpers.cu"
+					"../main_loop/main_loop_gpu.cu")
 
 target_include_directories(CUDA-Fishes PRIVATE 
 	../third_party/glfw/include

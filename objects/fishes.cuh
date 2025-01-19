@@ -39,7 +39,6 @@ public:
 
 	void h_CleanMemoryForFishes();
 	void d_CleanMemoryForFishes();
-	void CopyAfterCount();
 
 	void GenerateRandomFishes(int width, int height, float minVel, float maxVel);
 	void GenerateTestFishes();

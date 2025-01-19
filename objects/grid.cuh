@@ -37,6 +37,7 @@ public:
 	void SortCellsWithFishes();
 	void FindStartsAndEnds();
 	void CleanStartsAndEnds();
+	void CleanAfterAllCount(Fishes fishes);
 	__host__ __device__ int ReturnNumberOfCells() { return n_cells; };
 	__host__ __device__ int ReturnNumberOfCellsX() { return n_x_cells; };
 	__host__ __device__ int ReturnNumberOfCellsY() { return n_y_cells; };

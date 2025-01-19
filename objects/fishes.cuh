@@ -38,6 +38,7 @@ public:
 
 	void h_CleanMemoryForFishes();
 	void d_CleanMemoryForFishes();
+	void CopyAfterCount();
 
 	void GenerateRandomFishes(int width, int height, float minVel, float maxVel);
 	void GenerateTestFishes();
@@ -48,5 +49,34 @@ public:
 	__host__ __device__ void CountSeparation();
 	__host__ __device__ void CountAlignment();
 	__host__ __device__ void CountCohession();
+};
+
+struct CopyFishPositionsAndVelocitiesAfterCountFunctor
+{
+private:
+	float* x_before_movement;
+	float* y_before_movement;
+	float* x_vel_before_movement;
+	float* y_vel_before_movement;
+
+	float* x_after_movement;
+	float* y_after_movement;
+	float* x_vel_after_movement;
+	float* y_vel_after_movement;
+public:
+	CopyFishPositionsAndVelocitiesAfterCountFunctor(float* xBefore, float* yBefore, float* xVelBefore,
+		float* yVelBefore, float* xAfter, float* yAfter, float* xVelAfter, float* yVelAfter) :
+		x_before_movement(xBefore), y_before_movement(yBefore), x_vel_before_movement(xVelBefore),
+		y_vel_before_movement(yVelBefore), x_after_movement(xAfter), y_after_movement(yAfter),
+		x_vel_after_movement(xVelAfter), y_vel_after_movement(yVelAfter) {};
+
+	__host__ __device__ int operator()(int& index)
+	{
+		x_before_movement[index] = x_after_movement[index];
+		y_before_movement[index] = y_after_movement[index];
+		x_vel_before_movement[index] = x_vel_after_movement[index];
+		y_vel_before_movement[index] = y_vel_after_movement[index];
+		return index;
+	}
 };
 

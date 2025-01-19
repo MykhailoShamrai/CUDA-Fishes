@@ -139,6 +139,8 @@ __host__ __device__ void Fishes::CountForAFish(int index, Grid* grid, Options* o
 	float cohesionNormal = options->cohesionNormalFishes;
 	float alignmentNormal = options->alignmentNormalFishes;
 	float separationNormal = options->separationNormalFishes;
+	int width = options->width;
+	int height = options->height;
 
 	int indexOfFish = grid->fish_id[index];
 	int indexOfCell = grid->cell_id[index];
@@ -163,7 +165,7 @@ __host__ __device__ void Fishes::CountForAFish(int index, Grid* grid, Options* o
 	int x_ll = (x_ind - 1) >= 0 ? x_ind - 1 : numberOfCells_x - 1;
 	int y_tt = (y_ind - 1) >= 0 ? y_ind - 1 : numberOfCells_y - 1;
 	int y_bb = (y_ind + 1) % numberOfCells_y;
-
+	// Finding where should we check fishes for interaction
 	switch (quarterNumber)
 	{
 	case 1:
@@ -201,6 +203,47 @@ __host__ __device__ void Fishes::CountForAFish(int index, Grid* grid, Options* o
 	default:
 		break;
 	}
+	// Interaction counting 
+
+	float2 velBeforeInteraction = float2();
+	velBeforeInteraction.x = x_vel_before_movement[indexOfFish];
+	velBeforeInteraction.y = y_vel_before_movement[indexOfFish];
+	float2 additionalVel = float2();
+	additionalVel.x = 0.0f;
+	additionalVel.y = 0.0f;
+	// End of interaction counting
+	// 
+	// finding of direction vector
+	float2 velAfterCount = velBeforeInteraction + additionalVel;
+	float valueOfVel = cuda_examples::length(velAfterCount);
+	float2 directionVect = cuda_examples::normalize(velAfterCount);
+	if (valueOfVel > maxVel)
+	{
+		velAfterCount = directionVect * maxVel;
+	}
+	else if (valueOfVel < minVel)
+	{
+		velAfterCount = directionVect * minVel;
+	}
+	// Adding velocity to position and also adding changing velocity in an array
+	float xAfterMovement = x_before_movement[indexOfFish] + velAfterCount.x;
+	float yAfterMovement = y_before_movement[indexOfFish] + velAfterCount.y;
+	int widthHalf = width / 2;
+	int heightHalf = height / 2;
+	xAfterMovement = xAfterMovement > widthHalf ? -width + xAfterMovement : xAfterMovement;
+	xAfterMovement = xAfterMovement < -widthHalf ? width + xAfterMovement : xAfterMovement;
+
+	yAfterMovement = yAfterMovement > heightHalf ? -height + yAfterMovement : yAfterMovement;
+	yAfterMovement = yAfterMovement < -heightHalf ? height + yAfterMovement : yAfterMovement;
+
+	x_after_movement[indexOfFish] = xAfterMovement;
+	y_after_movement[indexOfFish] = yAfterMovement;
+	x_vel_after_movement[indexOfFish] = velAfterCount.x;
+	y_vel_after_movement[indexOfFish] = velAfterCount.y;
 }
+
+
+
+
 
 

@@ -2,6 +2,9 @@
 
 struct __align__(16) Options
 {
+	int width = 800;
+	int height = 600;
+
 	float separationNormalFishes = 1.0f;
 	float alignmentNormalFishes = 1.0f;
 	float cohesionNormalFishes = 1.0f;

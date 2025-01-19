@@ -122,6 +122,23 @@ void Grid::CleanStartsAndEnds()
 	}
 }
 
+void Grid::CleanAfterAllCount(Fishes fishes)
+{
+	CopyFishPositionsAndVelocitiesAfterCountFunctor func = 
+		CopyFishPositionsAndVelocitiesAfterCountFunctor(fishes.x_before_movement, fishes.y_before_movement,
+			fishes.x_vel_before_movement, fishes.y_vel_before_movement, fishes.x_after_movement, fishes.y_after_movement,
+			fishes.x_vel_after_movement, fishes.y_vel_after_movement);
+	if (onGpu)
+	{
+		auto dev_ptr_indices = thrust::device_pointer_cast(indices);
+		thrust::transform(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, dev_ptr_indices, func);
+	}
+	else
+	{
+		thrust::transform(thrust::host, indices, indices + n_fishes, indices, func);
+	}
+}
+
 
 
 void Grid::h_AllocateMemory()

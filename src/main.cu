@@ -8,14 +8,18 @@
 #include "../objects/grid.cuh"
 #include "../objects/options.cuh"
 #include "../include/helpers.cuh"
+#include <cuda_gl_interop.h>
 
 #define NUMBER_OF_FISHES 20
 #define WIDTH 800
 #define HEIGHT 600
 
+#define THREADS_PER_BLOCK 64
+
 bool withGpu = true;
 
 using namespace std;
+
 
 int main()
 {
@@ -64,6 +68,29 @@ int main()
 	d_fishes.d_CopyFishesFromCPU(h_fishes.x_before_movement, h_fishes.y_before_movement,
 		h_fishes.x_vel_before_movement, h_fishes.y_vel_before_movement, h_fishes.types);
 
+	// OpenGl stuff
+	// I'll make it in other way. I'll create opengl buffer, with points for triangles.
+	// In kernel or main function I'll pass the counted vertices to this buffer and after 
+	// draw it
+	GLuint VBO, VAO;
+	glGenBuffers(1, &VBO);
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * NUMBER_OF_FISHES, nullptr, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	
+	// Now i have registered buffer 
+	cudaGraphicsResource* cuda_vbo_res;
+	checkCudaErrors(cudaGraphicsGLRegisterBuffer(&cuda_vbo_res, VBO, cudaGraphicsRegisterFlagsWriteDiscard));
+
+	float* d_trianglesVertices;
+	size_t size;
+	checkCudaErrors(cudaGraphicsMapResources(1, &cuda_vbo_res));
+	checkCudaErrors(cudaGraphicsResourceGetMappedPointer((void**)d_trianglesVertices, &size, cuda_vbo_res));
+
+
 	// TODO: Option struct
 	Options h_options = Options();
 	Options* d_options;
@@ -93,7 +120,7 @@ int main()
 
 		if (withGpu)
 		{
-
+			dim3 numBlocks((NUMBER_OF_FISHES + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK);
 		}
 
 		ImGui::Render();

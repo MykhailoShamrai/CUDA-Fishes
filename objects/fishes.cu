@@ -1,10 +1,9 @@
 #include "fishes.cuh"
 #include <stdlib.h>
-#include "../include/helpers.cuh"
 #include "../third_party/cuda-samples/helper_math.h"
 #include "grid.cuh"
 #include "options.cuh"
-
+#include "../include/helpers.cuh"
 
 Fishes::Fishes(int n, bool onGpu): n(n), onGpu(onGpu)
 {
@@ -240,6 +239,28 @@ __host__ __device__ void Fishes::CountForAFish(int index, Grid* grid, Options* o
 	y_after_movement[indexOfFish] = yAfterMovement;
 	x_vel_after_movement[indexOfFish] = velAfterCount.x;
 	y_vel_after_movement[indexOfFish] = velAfterCount.y;
+}
+
+__host__ __device__ void Fishes::FindTrianglesForAFish(int index, float* buffer, int lenOfTriang, int widthOfTriang)
+{
+	float2 vel = float2();
+	vel.x = x_after_movement[index];
+	vel.y = y_after_movement[index];
+	float2 direction = cuda_examples::normalize(vel);
+	float2 reversedDirection = -direction;
+	float2 normal = float2();
+	normal.x = -direction.y;
+	normal.y = direction.x;
+	float2 first = 3.0f * lenOfTriang * direction / 5.0f;
+	float2 second = 2.0f * lenOfTriang * reversedDirection / 5.0f + widthOfTriang * normal / 2.0f;
+	float2 third = 2.0f * cuda_examples::dot(direction, second) * direction - second;
+	int indexInBuffer = index * 6; // W have 6 elements for each fish
+	buffer[indexInBuffer] = first.x;
+	buffer[indexInBuffer + 1] = first.y;
+	buffer[indexInBuffer + 2] = second.x;
+	buffer[indexInBuffer + 3] = second.y;
+	buffer[indexInBuffer + 4] = third.x;
+	buffer[indexInBuffer + 5] = third.y;
 }
 
 

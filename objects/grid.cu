@@ -41,15 +41,9 @@ void Grid::InitialiseArraysIndicesAndFishes()
 	InitArraysFunctor func = InitArraysFunctor();
 	if (onGpu)
 	{
-		//float* test_array = (float*)malloc(sizeof(float) * n_fishes);
 		thrust::device_ptr<int> dev_ptr_indices(indices);
 		thrust::device_ptr<int> dev_ptr_fish_id(fish_id);
-
-		//checkCudaErrors(cudaMemmc)
-		//auto dev_ptr_fish_id = thrust::device_pointer_cast(fish_id);
-		// Firstly start from writing everywhere -1
 		thrust::transform(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, dev_ptr_indices, func);
-		//thrust::fill(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, 1);
 		cudaDeviceSynchronize();
 		thrust::exclusive_scan(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, dev_ptr_indices);
 		cudaDeviceSynchronize();

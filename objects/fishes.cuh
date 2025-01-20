@@ -45,7 +45,7 @@ public:
 	void d_CopyFishesFromCPU(float* x_before_movement, float* y_before_movement,
 		float* x_vel_before_movement, float* y_vel_before_movement, FishType* types);
 
-	__host__ __device__ void CountForAFish(int index, Grid* grid, Options* options);
+	__host__ __device__ int CountForAFish(int index, Grid* grid, Options* options);
 	__host__ __device__ void FindTrianglesForAFish(int index, float* buffer, int lenOfTriang, int widthOfTriang);
 	__host__ __device__ void CountSeparation();
 	__host__ __device__ void CountAlignment();
@@ -71,7 +71,7 @@ public:
 		y_vel_before_movement(yVelBefore), x_after_movement(xAfter), y_after_movement(yAfter),
 		x_vel_after_movement(xVelAfter), y_vel_after_movement(yVelAfter) {};
 
-	__host__ __device__ int operator()(int& index)
+	__host__ __device__ int operator()(int index)
 	{
 		x_before_movement[index] = x_after_movement[index];
 		y_before_movement[index] = y_after_movement[index];

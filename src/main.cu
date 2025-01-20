@@ -71,16 +71,31 @@ int main()
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init();
 
+	// TEST SECTION //
+// _________________________________________________________________-----------________________________________________-
+	int* test_array = (int*)malloc(sizeof(int) * NUMBER_OF_FISHES);
+	int* test_array2 = (int*)malloc(sizeof(int) * NUMBER_OF_FISHES);
+	// END OF TEST SECTION 
+
+
 	Fishes h_fishes = Fishes(NUMBER_OF_FISHES, false);
 	h_fishes.GenerateTestFishes();
 	for (int i = 0; i < NUMBER_OF_FISHES; i++)
 	{
-		printf("%f, ", h_fishes.x_before_movement[i]);
+		printf("%d, ", h_fishes.x_before_movement[i]);
 	}
 	printf("\n");
 	Fishes d_fishes = Fishes(NUMBER_OF_FISHES, true);
 	d_fishes.d_CopyFishesFromCPU(h_fishes.x_before_movement, h_fishes.y_before_movement,
 		h_fishes.x_vel_before_movement, h_fishes.y_vel_before_movement, h_fishes.types);
+
+
+	//checkCudaErrors(cudaMemcpy(test_array, d_fishes.y_before_movement, sizeof(float) * NUMBER_OF_FISHES, cudaMemcpyDeviceToHost));
+	//printf("----------------------------------------------------\n");
+	//for (int i = 0; i < NUMBER_OF_FISHES; i++)
+	//{
+	//	printf("%f\n", test_array[i]);
+	//}
 
 	int success;
 	char infoLog[512];
@@ -149,17 +164,31 @@ int main()
 
 
 	Grid h_grid = Grid(NUMBER_OF_FISHES, h_options.radiusNormalFishes, WIDTH, HEIGHT, false);
+	for (int i = 0; i < NUMBER_OF_FISHES; i++)
+	{
+		printf("index: %d, fish: %d\n", h_grid.indices[i], h_grid.fish_id[i]);
+	}
 	Grid d_grid = Grid(NUMBER_OF_FISHES, h_options.radiusNormalFishes, WIDTH, HEIGHT, true);
+	checkCudaErrors(cudaMemcpy(test_array, d_grid.indices, sizeof(int) * NUMBER_OF_FISHES, cudaMemcpyDeviceToHost));
+	checkCudaErrors(cudaMemcpy(test_array2, d_grid.fish_id, sizeof(int) * NUMBER_OF_FISHES, cudaMemcpyDeviceToHost));
+	printf("----------------------------------------------------\n");
+	for (int i = 0; i < NUMBER_OF_FISHES; i++)
+	{
+		printf("index: %d, fish: %d\n", test_array[i], test_array2[i]);
+	}
+
 	h_grid.FindCellsForFishes(h_fishes);
 	//d_grid.FindCellsForFishes(d_fishes);
 	h_grid.SortCellsWithFishes();
 	//d_grid.SortCellsWithFishes();
 	h_grid.CleanStartsAndEnds();
-	d_grid.CleanStartsAndEnds();
+	//d_grid.CleanStartsAndEnds();
 	h_grid.FindStartsAndEnds();
 	//d_grid.FindStartsAndEnds();
 
 	glUseProgram(shaderProgram);
+
+
 
 	dim3 numBlocks((NUMBER_OF_FISHES + THREAD_NUMBER - 1) / THREAD_NUMBER);
 	while (!glfwWindowShouldClose(window))
@@ -174,19 +203,20 @@ int main()
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		float* d_trianglesVertices = nullptr;
 		if (withGpu)
 		{
-			float* d_trianglesVertices = nullptr;
 			size_t size = 0;
 			checkCudaErrors(cudaGraphicsMapResources(1, &cuda_vbo_res));
 			checkCudaErrors(cudaGraphicsResourceGetMappedPointer((void**)&d_trianglesVertices, &size, cuda_vbo_res));
 
 
 			d_grid.FindCellsForFishes(d_fishes);
+
 			d_grid.SortCellsWithFishes();
 			d_grid.FindStartsAndEnds();
 			// Count for every fish the next position and velocity
-			CountForFishes << <numBlocks, THREAD_NUMBER >> > (d_grid, d_options, d_fishes, d_trianglesVertices, NUMBER_OF_FISHES);
+			CountForFishes << <numBlocks, NUMBER_OF_FISHES >> > (d_grid, d_options, d_fishes, d_trianglesVertices, NUMBER_OF_FISHES);
 			checkCudaErrors(cudaGetLastError());
 			checkCudaErrors(cudaDeviceSynchronize());
 			d_grid.CleanStartsAndEnds();
@@ -194,6 +224,26 @@ int main()
 
 			checkCudaErrors(cudaGraphicsUnmapResources(1, &cuda_vbo_res));
 		}
+
+		// TEST AREA
+		//checkCudaErrors(cudaMemcpy(test_array, d_fishes.y_before_movement, sizeof(float) * NUMBER_OF_FISHES, cudaMemcpyDeviceToHost));
+		printf("----------------------------------------------------\n");
+		//for (int i = 0; i < NUMBER_OF_FISHES; i++)
+		//{
+		//	printf("%f\n", test_array[i]);
+		//}
+
+
+		// checkCudaErrors(cudaMemcpy(test_array, d_trianglesVertices, sizeof(float) * 6 * NUMBER_OF_FISHES, cudaMemcpyDeviceToHost));
+		// printf("----------------------------------------------------\n");
+		// for (int i = 0; i < NUMBER_OF_FISHES; i++)
+		// {
+		// 	printf("%f, %f\n", test_array[i * 6], test_array[i * 6 + 1]);
+		// 	printf("%f, %f\n", test_array[i * 6 + 2], test_array[i * 6 + 3]);
+		// 	printf("%f, %f\n", test_array[i * 6 + 4], test_array[i * 6 + 5]);
+		// }
+		// TEST AREA
+
 		glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, NUMBER_OF_FISHES * 3);
@@ -207,6 +257,7 @@ int main()
 		glfwPollEvents();
 	}
 
+	free(test_array);
 	d_fishes.d_CleanMemoryForFishes();
 	h_fishes.h_CleanMemoryForFishes();
 	d_grid.d_CleanMemory();

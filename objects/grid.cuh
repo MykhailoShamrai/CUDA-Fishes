@@ -1,5 +1,6 @@
 #pragma once 
 #include <cuda_runtime.h>
+#include <thrust/functional.h>
 
 extern struct Fishes;
 
@@ -60,7 +61,7 @@ public:
 		xPosition(x_pos), yPosition(y_pos), sizeOfCell(sizeOfCell), width(width), height(height), nXCells(nXCells), 
 	nYCells(nYCells){};
 
-	__host__ __device__ int operator()(int& index)
+	__host__ __device__ int operator()(int index)
 	{
 		float x = xPosition[index];
 		float y = yPosition[index];
@@ -88,7 +89,7 @@ public:
 		int height, int nXCells, int nYCells): xPosition(x_pos), yPosition(y_pos), cellId(cellId),
 		sizeOfCell(sizeofCell), width(width), height(height), nXCells(nXCells), nYCells(nYCells){}
 
-	__host__ __device__ int operator()(int& index)
+	__host__ __device__ int operator()(int index)
 	{
 		float x = xPosition[index];
 		float y = yPosition[index];
@@ -137,7 +138,7 @@ public: FindStartsAndEndsFunctor(int nFishes, int* startsOfCells, int* endsOfCel
 	n_fishes(nFishes), startsOfCells(startsOfCells),
 		endsOfCells(endsOfCells), sortedCells(sortedCells) {}
 
-	__host__ __device__ int operator()(int& index)
+	__host__ __device__ int operator()(int index)
 	{
 		if (index == 0 || sortedCells[index - 1] != sortedCells[index])
 		{
@@ -153,7 +154,7 @@ public: FindStartsAndEndsFunctor(int nFishes, int* startsOfCells, int* endsOfCel
 
 struct InitArraysFunctor
 {	
-	__host__ __device__ int operator()(int& index)
+	__host__ __device__ int operator()(int index)
 	{
 		return 1;
 	}
@@ -161,7 +162,7 @@ struct InitArraysFunctor
 
 struct CleanStartsAndEndsFunctor
 {
-	__host__ __device__ int operator()(int& index)
+	__host__ __device__ int operator()(int index)
 	{
 		return -1;
 	}

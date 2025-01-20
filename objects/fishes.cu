@@ -131,7 +131,7 @@ void Fishes::d_CopyFishesFromCPU(float* x_before_movement, float* y_before_movem
 	}
 }
 
-__host__ __device__ void Fishes::CountForAFish(int index, Grid* grid, Options* options)
+__host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* options)
 {
 	float maxVel = options->maxVelNormalFishes;
 	float minVel = options->minVelNormalFishes;
@@ -239,6 +239,8 @@ __host__ __device__ void Fishes::CountForAFish(int index, Grid* grid, Options* o
 	y_after_movement[indexOfFish] = yAfterMovement;
 	x_vel_after_movement[indexOfFish] = velAfterCount.x;
 	y_vel_after_movement[indexOfFish] = velAfterCount.y;
+
+	return indexOfFish;
 }
 
 __host__ __device__ void Fishes::FindTrianglesForAFish(int index, float* buffer, int lenOfTriang, int widthOfTriang)

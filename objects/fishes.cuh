@@ -48,9 +48,6 @@ public:
 
 	__host__ __device__ int CountForAFish(int index, Grid* grid, Options* options);
 	__host__ __device__ void FindTrianglesForAFish(int index, float* buffer, int lenOfTriang, int widthOfTriang);
-	__host__ __device__ void CountSeparation();
-	__host__ __device__ void CountAlignment();
-	__host__ __device__ void CountCohession();
 };
 
 struct CopyFishPositionsAndVelocitiesAfterCountFunctor
@@ -76,8 +73,6 @@ public:
 	{
 		assert(x_before_movement[index] != x_after_movement[index]);
 		assert(y_before_movement[index] != y_after_movement[index]);
-		assert(x_vel_before_movement[index] != x_vel_after_movement[index]);
-		assert(y_vel_before_movement[index] != y_vel_after_movement[index]);
 		x_before_movement[index] = x_after_movement[index];
 		y_before_movement[index] = y_after_movement[index];
 		x_vel_before_movement[index] = x_vel_after_movement[index];

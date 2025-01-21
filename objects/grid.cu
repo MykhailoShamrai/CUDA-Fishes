@@ -20,7 +20,6 @@
 Grid::Grid(int nFishes, int radiusForFishes, int width, int height, bool onGpu):
 	onGpu(onGpu), n_fishes(nFishes), width(width), height(height)
 {
-	// TODO: Firstly count how many cells there is
 	cellSize = radiusForFishes * 2;
 	
 	// One cell has width = 2 * radius and height = 2 * radius
@@ -37,64 +36,50 @@ Grid::Grid(int nFishes, int radiusForFishes, int width, int height, bool onGpu):
 	{
 		h_AllocateMemory();
 	}
-	InitialiseArraysIndicesAndFishes();
 }
 
-static bool verifyArray(int* array1, int n)
+// Test function for assert
+static bool verifyArrayIndices(int* array, int n)
 {
 	std::set<int> set_test{};
 	for (int i = 0; i < n; i++)
 	{
-		printf("%d\n", array1[i]);
-		auto res = set_test.insert(array1[i]);
+		auto res = set_test.insert(array[i]);
 		if (!res.second)
 		{
-			while (i < n)
-			{
-				//printf("%d\n", array1[i]);
-				i++;
-			}
 			return false;
 		}
 	}
 	return true;
 }
 
-static bool verifyCudaArray(int* array, int n)
+// Test
+static bool verifyCudaArrayIndices(int* array, int n)
 {
 	std::vector<int> vec(n, 0);
 	checkCudaErrors(cudaMemcpy(vec.data(), array, n * sizeof(int), cudaMemcpyDeviceToHost));
-	return verifyArray(vec.data(), n);
+	return verifyArrayIndices(vec.data(), n);
 }
 
-void Grid::InitialiseArraysIndicesAndFishes()
+void Grid::h_InitialiseArraysIndicesAndFishes()
 {
-	InitArraysFunctor func = InitArraysFunctor();
-	if (onGpu)
+	for (int i = 0; i < n_fishes; i++)
 	{
-		{
-			thrust::device_ptr<int> dev_ptr_indices(indices);
-			thrust::device_ptr<int> dev_ptr_fish_id(fish_id);
-			thrust::transform(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, dev_ptr_indices, func);
-			checkCudaErrors(cudaDeviceSynchronize());
-		}
-		thrust::device_ptr<int> dev_ptr_indices(indices);
-		thrust::device_ptr<int> dev_ptr_indices_1(indices);
-		thrust::device_ptr<int> dev_ptr_fish_id(fish_id);
-		// WTF
-		thrust::inclusive_scan(indices, indices + n_fishes, indices);
-		checkCudaErrors(cudaDeviceSynchronize());
-		thrust::copy_n(thrust::device, dev_ptr_indices_1, n_fishes, dev_ptr_fish_id);
-		checkCudaErrors(cudaDeviceSynchronize());
-		assert(verifyCudaArray(indices, n_fishes));
+		indices[i] = i;
+		fish_id[i] = i;
 	}
-	else
-	{
-		thrust::transform(thrust::host, indices, indices + n_fishes, indices, func);
-		thrust::exclusive_scan(thrust::host, indices, indices + n_fishes, indices);
-		thrust::copy_n(thrust::host, indices, n_fishes, fish_id);
-		assert(verifyArray(indices, n_fishes));
-	}
+	assert(verifyArrayIndices(indices, n_fishes));
+	assert(verifyArrayIndices(fish_id, n_fishes));
+}
+
+void Grid::d_InitialiseArraysIndicesAndFishes(int* initialisedIndexArray)
+{
+	assert(initialisedIndexArray);
+	assert(verifyArrayIndices(initialisedIndexArray, n_fishes));
+	checkCudaErrors(cudaMemcpy(indices, initialisedIndexArray, n_fishes * sizeof(float), cudaMemcpyHostToDevice));
+	assert(verifyCudaArrayIndices(indices, n_fishes));
+	checkCudaErrors(cudaMemcpy(fish_id, indices, n_fishes * sizeof(float), cudaMemcpyDeviceToDevice));
+	assert(verifyCudaArrayIndices(fish_id, n_fishes));
 }
 
 void Grid::FindCellsForFishes(Fishes fishes)
@@ -119,6 +104,7 @@ void Grid::FindCellsForFishes(Fishes fishes)
 		thrust::transform(thrust::host, indices, indices + n_fishes, quarter_number, funcQ);
 	}
 }
+
 
 void Grid::SortCellsWithFishes()
 {
@@ -169,21 +155,49 @@ void Grid::CleanStartsAndEnds()
 	}
 }
 
+static bool VerifyIfArraysAreNotTheSame(float* array1, float* array2, int n)
+{
+	for (int i = 0; i < n; i++)
+	{
+		if (array1[i] == array2[i])
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+static bool VerifyCudaIfArraysAreNotTheSame(float* array1, float* array2, int n)
+{
+	std::vector<float> vec1(n, 0.0f);
+	std::vector<float> vec2(n, 0.0f);
+	checkCudaErrors(cudaMemcpy(vec1.data(), array1, n * sizeof(float), cudaMemcpyDeviceToHost));
+	checkCudaErrors(cudaMemcpy(vec2.data(), array2, n * sizeof(float), cudaMemcpyDeviceToHost));
+	return VerifyIfArraysAreNotTheSame(vec1.data(), vec2.data(), n);
+}
+
 void Grid::CleanAfterAllCount(Fishes fishes)
 {
-	CopyFishPositionsAndVelocitiesAfterCountFunctor func = 
-		CopyFishPositionsAndVelocitiesAfterCountFunctor(fishes.x_before_movement, fishes.y_before_movement,
-			fishes.x_vel_before_movement, fishes.y_vel_before_movement, fishes.x_after_movement, fishes.y_after_movement,
-			fishes.x_vel_after_movement, fishes.y_vel_after_movement);
 	if (onGpu)
 	{
-		auto dev_ptr_indices = thrust::device_pointer_cast(indices);
-		thrust::transform(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, dev_ptr_indices, func);
-		cudaDeviceSynchronize();
+		assert(VerifyCudaIfArraysAreNotTheSame(fishes.x_before_movement, fishes.x_after_movement, n_fishes));
+		assert(VerifyCudaIfArraysAreNotTheSame(fishes.y_before_movement, fishes.y_after_movement, n_fishes));
+		checkCudaErrors(cudaMemcpy(fishes.x_before_movement, fishes.x_after_movement, n_fishes * sizeof(float), cudaMemcpyDeviceToDevice));
+		checkCudaErrors(cudaMemcpy(fishes.y_before_movement, fishes.y_after_movement, n_fishes * sizeof(float), cudaMemcpyDeviceToDevice));
+		checkCudaErrors(cudaMemcpy(fishes.x_vel_before_movement, fishes.x_vel_after_movement, n_fishes * sizeof(float), cudaMemcpyDeviceToDevice));
+		checkCudaErrors(cudaMemcpy(fishes.y_vel_before_movement, fishes.y_vel_after_movement, n_fishes * sizeof(float), cudaMemcpyDeviceToDevice));
 	}
 	else
 	{
-		thrust::transform(thrust::host, indices, indices + n_fishes, indices, func);
+		assert(VerifyIfArraysAreNotTheSame(fishes.x_before_movement, fishes.x_after_movement, n_fishes));
+		assert(VerifyIfArraysAreNotTheSame(fishes.y_before_movement, fishes.y_after_movement, n_fishes));
+		for (int i = 0; i < n_fishes; i++)
+		{
+			fishes.x_before_movement[i] = fishes.x_after_movement[i];
+			fishes.y_before_movement[i] = fishes.y_after_movement[i];
+			fishes.x_vel_before_movement[i] = fishes.x_vel_after_movement[i];
+			fishes.y_vel_before_movement[i] = fishes.y_vel_after_movement[i];
+		}
 	}
 }
 

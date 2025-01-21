@@ -33,7 +33,8 @@ public:
 
 	void h_CleanMemory();
 	void d_CleanMemory();
-	void InitialiseArraysIndicesAndFishes();
+	void h_InitialiseArraysIndicesAndFishes();
+	void d_InitialiseArraysIndicesAndFishes(int* initialisedIndexArray);
 	void FindCellsForFishes(Fishes fishes);
 	void SortCellsWithFishes();
 	void FindStartsAndEnds();

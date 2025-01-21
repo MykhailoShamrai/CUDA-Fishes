@@ -144,7 +144,6 @@ __host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* op
 
 	int indexOfFish = grid->fish_id[index];
 
-	printf("%d\n", indexOfFish);
 	int indexOfCell = grid->cell_id[index];
 
 	int numberOfCells = grid->ReturnNumberOfCells();
@@ -256,9 +255,9 @@ __host__ __device__ void Fishes::FindTrianglesForAFish(int index, float* buffer,
 	float2 normal = float2();
 	normal.x = -direction.y;
 	normal.y = direction.x;
-	float2 first = 8 * direction + currentPosition;
-	float2 second = 4 * normal + currentPosition;
-	float2 third = 4 * -normal + currentPosition;
+	float2 first = 4 * direction + currentPosition;
+	float2 second = 2 * normal + currentPosition;
+	float2 third = 2 * -normal + currentPosition;
 	int indexInBuffer = index * 6; // W have 6 elements for each fish
 	buffer[indexInBuffer] = first.x;
 	buffer[indexInBuffer + 1] = first.y;

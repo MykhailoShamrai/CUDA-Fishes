@@ -11,7 +11,7 @@
 #include <cuda_gl_interop.h>
 #include "../main_loop/main_loop_gpu.cuh"
 
-#define NUMBER_OF_FISHES 12000
+#define NUMBER_OF_FISHES 10753
 #define WIDTH 800
 #define HEIGHT 600
 
@@ -150,12 +150,9 @@ int main()
 
 
 	Grid h_grid = Grid(NUMBER_OF_FISHES, h_options.radiusNormalFishes, WIDTH, HEIGHT, false);
-	//for (int i = 0; i < NUMBER_OF_FISHES; i++)
-	//{
-	//	printf("index: %d, fish: %d\n", h_grid.indices[i], h_grid.fish_id[i]);
-	//}
 	Grid d_grid = Grid(NUMBER_OF_FISHES, h_options.radiusNormalFishes, WIDTH, HEIGHT, true);
-	
+	h_grid.h_InitialiseArraysIndicesAndFishes();
+	d_grid.d_InitialiseArraysIndicesAndFishes(h_grid.indices);
 
 	h_grid.FindCellsForFishes(h_fishes);
 	//d_grid.FindCellsForFishes(d_fishes);
@@ -168,7 +165,6 @@ int main()
 
 	glUseProgram(shaderProgram);
 
-	bool testBool = true;
 	float* firstArray = (float*)malloc(sizeof(float) * 6 * NUMBER_OF_FISHES);
 	float* secondArray = (float*)malloc(sizeof(float) * 6 * NUMBER_OF_FISHES);
 	//dim3 numBlocks(16);
@@ -196,13 +192,13 @@ int main()
 			cudaEventRecord(start);
 
 			d_grid.FindCellsForFishes(d_fishes);
-
 			d_grid.SortCellsWithFishes();
 			d_grid.FindStartsAndEnds();
 			// Count for every fish the next position and velocity
 			CountForFishes << <numBlocks, THREAD_NUMBER >> > (d_grid, d_options, d_fishes, d_trianglesVertices, NUMBER_OF_FISHES);
 			checkCudaErrors(cudaGetLastError());
 			checkCudaErrors(cudaDeviceSynchronize());
+			printf("----------------------------------------------------------\n");
 			d_grid.CleanStartsAndEnds();
 			d_grid.CleanAfterAllCount(d_fishes);
 
@@ -210,23 +206,7 @@ int main()
 			cudaEventSynchronize(stop);
 			float milliseconds = 0;
 			cudaEventElapsedTime(&milliseconds, start, stop);
-			//printf("Kernel execution time: %f ms\n", milliseconds);
-			//if (testBool)
-			//{
-			//	checkCudaErrors(cudaMemcpy(firstArray, d_trianglesVertices, sizeof(float) * 6 * NUMBER_OF_FISHES, cudaMemcpyDeviceToHost));
-			//}
-			//else
-			//{
-			//	checkCudaErrors(cudaMemcpy(secondArray, d_trianglesVertices, sizeof(float) * 6 * NUMBER_OF_FISHES, cudaMemcpyDeviceToHost));
-			//	for (int i = 0; i < NUMBER_OF_FISHES; i++)
-			//	{
-			//		if (fabs(firstArray[i] - fabs(secondArray[i]) < 10e-8))
-			//		{
-			//			printf("Japierpapier, no dupka, nie liczy sie\n");
-			//		}
-			//	}
-			printf("-----------------------------------------------------\n");
-			//}
+
 			checkCudaErrors(cudaGraphicsUnmapResources(1, &cuda_vbo_res));
 		}
 
@@ -244,7 +224,6 @@ int main()
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 		//free(test_array);
-		testBool = !testBool;
 	}
 	free(firstArray);
 	free(secondArray);

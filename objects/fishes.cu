@@ -78,26 +78,27 @@ void Fishes::d_CleanMemoryForFishes()
 	checkCudaErrors(cudaFree(types));
 }
 
+float rand_float_test(float low, float high)
+{
+	return low + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (high - low)));
+}
+
 void Fishes::GenerateRandomFishes(int width, int height, float minVel, float maxVel)
 {
 	int highWidth = float(width) / 2;
 	int lowWidht = -highWidth;
 	int highHeight = float(height) / 2;
-	int lowHeight = float(height) / 2;
+	int lowHeight = -highHeight;
 	for (int i = 0; i < this->n; i++)
 	{
-		this->x_before_movement[i] = rand_float(lowWidht, highWidth);
-		this->y_before_movement[i] = rand_float(lowHeight, highHeight);
+		this->x_before_movement[i] = rand_float_test(lowWidht, highWidth);
+		this->y_before_movement[i] = rand_float_test(lowHeight, highHeight);
 		// Random normal vector in 2D
 		float2 vel = float2();
-		vel.x = rand_float(-1.0f, 1.0f);
-		vel.y = sqrtf(1.0f - vel.x * vel.x);
-		if (rand_float(0.0f, 1.0f) < 0.5f)
-		{
-			vel.y = -vel.y;
-		}
-		float velValue = rand_float(minVel, maxVel);
-		vel *= velValue;
+		vel.x = 2.0f;
+		vel.y = 2.0f;
+		//float velValue = rand_float(minVel, maxVel);
+		//vel *= velValue;
 		this->x_vel_before_movement[i] = vel.x;
 		this->y_vel_before_movement[i] = vel.y;
 		// TODO: At this moment hardcoded NormalFishes
@@ -108,12 +109,12 @@ void Fishes::GenerateRandomFishes(int width, int height, float minVel, float max
 void Fishes::GenerateTestFishes()
 {
 	// I'll generate test 20 fishes with same velocity 1 and same vectors of velocity
-	for (int i = 0; i < 20; i++)
+	for (int i = 0; i < this->n; i++)
 	{
 		this->x_before_movement[i] = -100 + i * 10 - 1;
 		this->y_before_movement[i] = -100 + i * 10 - 1;
-		this->x_vel_before_movement[i] = 10 * 0.5f;
-		this->y_vel_before_movement[i] = 10 * sqrtf(0.75);
+		this->x_vel_before_movement[i] = 1 + 0.5f;
+		this->y_vel_before_movement[i] = 1 + sqrtf(0.75);
 		this->types[i] = FishType::NormalFish;
 	}
 }
@@ -142,6 +143,8 @@ __host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* op
 	int height = options->height;
 
 	int indexOfFish = grid->fish_id[index];
+
+	printf("%d\n", indexOfFish);
 	int indexOfCell = grid->cell_id[index];
 
 	int numberOfCells = grid->ReturnNumberOfCells();
@@ -210,9 +213,6 @@ __host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* op
 	float2 additionalVel = float2();
 	additionalVel.x = 0.0f;
 	additionalVel.y = 0.0f;
-	// End of interaction counting
-	// 
-	// finding of direction vector
 	float2 velAfterCount = velBeforeInteraction + additionalVel;
 	float valueOfVel = cuda_examples::length(velAfterCount);
 	float2 directionVect = cuda_examples::normalize(velAfterCount);
@@ -245,17 +245,20 @@ __host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* op
 
 __host__ __device__ void Fishes::FindTrianglesForAFish(int index, float* buffer, int lenOfTriang, int widthOfTriang)
 {
+	float2 currentPosition;
+	currentPosition.x = x_after_movement[index];
+	currentPosition.y = y_after_movement[index];
 	float2 vel = float2();
-	vel.x = x_after_movement[index];
-	vel.y = y_after_movement[index];
+	vel.x = x_vel_after_movement[index];
+	vel.y = y_vel_after_movement[index];
 	float2 direction = cuda_examples::normalize(vel);
 	float2 reversedDirection = -direction;
 	float2 normal = float2();
 	normal.x = -direction.y;
 	normal.y = direction.x;
-	float2 first = 3.0f * lenOfTriang * direction / 5.0f;
-	float2 second = 2.0f * lenOfTriang * reversedDirection / 5.0f + widthOfTriang * normal / 2.0f;
-	float2 third = 2.0f * cuda_examples::dot(direction, second) * direction - second;
+	float2 first = 8 * direction + currentPosition;
+	float2 second = 4 * normal + currentPosition;
+	float2 third = 4 * -normal + currentPosition;
 	int indexInBuffer = index * 6; // W have 6 elements for each fish
 	buffer[indexInBuffer] = first.x;
 	buffer[indexInBuffer + 1] = first.y;

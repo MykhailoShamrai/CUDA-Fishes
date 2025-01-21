@@ -1,5 +1,6 @@
 #pragma once
 #include <cuda_runtime.h>
+#include <cassert>
 
 
 extern struct Options;
@@ -73,6 +74,10 @@ public:
 
 	__host__ __device__ int operator()(int index)
 	{
+		assert(x_before_movement[index] != x_after_movement[index]);
+		assert(y_before_movement[index] != y_after_movement[index]);
+		assert(x_vel_before_movement[index] != x_vel_after_movement[index]);
+		assert(y_vel_before_movement[index] != y_vel_after_movement[index]);
 		x_before_movement[index] = x_after_movement[index];
 		y_before_movement[index] = y_after_movement[index];
 		x_vel_before_movement[index] = x_vel_after_movement[index];

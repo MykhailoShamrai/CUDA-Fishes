@@ -10,6 +10,11 @@
 #include <thrust/sort.h>
 #include <thrust/copy.h>
 #include "fishes.cuh"
+#include <set>
+#include <vector>
+#include <thrust/host_vector.h>
+#include <thrust/device_vector.h>
+#include <thrust/scan.h>
 
 
 Grid::Grid(int nFishes, int radiusForFishes, int width, int height, bool onGpu):
@@ -35,26 +40,60 @@ Grid::Grid(int nFishes, int radiusForFishes, int width, int height, bool onGpu):
 	InitialiseArraysIndicesAndFishes();
 }
 
+static bool verifyArray(int* array1, int n)
+{
+	std::set<int> set_test{};
+	for (int i = 0; i < n; i++)
+	{
+		printf("%d\n", array1[i]);
+		auto res = set_test.insert(array1[i]);
+		if (!res.second)
+		{
+			while (i < n)
+			{
+				//printf("%d\n", array1[i]);
+				i++;
+			}
+			return false;
+		}
+	}
+	return true;
+}
+
+static bool verifyCudaArray(int* array, int n)
+{
+	std::vector<int> vec(n, 0);
+	checkCudaErrors(cudaMemcpy(vec.data(), array, n * sizeof(int), cudaMemcpyDeviceToHost));
+	return verifyArray(vec.data(), n);
+}
 
 void Grid::InitialiseArraysIndicesAndFishes()
 {
 	InitArraysFunctor func = InitArraysFunctor();
 	if (onGpu)
 	{
+		{
+			thrust::device_ptr<int> dev_ptr_indices(indices);
+			thrust::device_ptr<int> dev_ptr_fish_id(fish_id);
+			thrust::transform(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, dev_ptr_indices, func);
+			checkCudaErrors(cudaDeviceSynchronize());
+		}
 		thrust::device_ptr<int> dev_ptr_indices(indices);
+		thrust::device_ptr<int> dev_ptr_indices_1(indices);
 		thrust::device_ptr<int> dev_ptr_fish_id(fish_id);
-		thrust::transform(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, dev_ptr_indices, func);
-		cudaDeviceSynchronize();
-		thrust::exclusive_scan(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, dev_ptr_indices);
-		cudaDeviceSynchronize();
-		thrust::copy_n(thrust::device, dev_ptr_indices, n_fishes, dev_ptr_fish_id);
-		cudaDeviceSynchronize();
+		// WTF
+		thrust::inclusive_scan(indices, indices + n_fishes, indices);
+		checkCudaErrors(cudaDeviceSynchronize());
+		thrust::copy_n(thrust::device, dev_ptr_indices_1, n_fishes, dev_ptr_fish_id);
+		checkCudaErrors(cudaDeviceSynchronize());
+		assert(verifyCudaArray(indices, n_fishes));
 	}
 	else
 	{
 		thrust::transform(thrust::host, indices, indices + n_fishes, indices, func);
 		thrust::exclusive_scan(thrust::host, indices, indices + n_fishes, indices);
 		thrust::copy_n(thrust::host, indices, n_fishes, fish_id);
+		assert(verifyArray(indices, n_fishes));
 	}
 }
 
@@ -70,7 +109,9 @@ void Grid::FindCellsForFishes(Fishes fishes)
 		auto dev_ptr_indices = thrust::device_pointer_cast(indices);
 		auto dev_ptr_quarters = thrust::device_pointer_cast(quarter_number);
 		thrust::transform(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, dev_ptr_cell_id, func);
+		cudaDeviceSynchronize();
 		thrust::transform(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, dev_ptr_quarters, funcQ);
+		cudaDeviceSynchronize();
 	}
 	else
 	{
@@ -86,6 +127,7 @@ void Grid::SortCellsWithFishes()
 		auto dev_ptr_cell_id = thrust::device_pointer_cast(cell_id);
 		auto dev_ptr_fish_id = thrust::device_pointer_cast(fish_id);
 		thrust::sort_by_key(thrust::device, dev_ptr_cell_id, dev_ptr_cell_id + n_fishes, dev_ptr_fish_id);
+		cudaDeviceSynchronize();
 	}
 	else
 	{
@@ -100,6 +142,7 @@ void Grid::FindStartsAndEnds()
 	{
 		auto dev_ptr_indices = thrust::device_pointer_cast(indices);
 		thrust::transform(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, dev_ptr_indices, func);
+		cudaDeviceSynchronize();
 	}
 	else
 	{
@@ -115,7 +158,9 @@ void Grid::CleanStartsAndEnds()
 		auto dev_ptr_starts = thrust::device_pointer_cast(cells_starts);
 		auto dev_ptr_ends = thrust::device_pointer_cast(cells_ends);
 		thrust::transform(thrust::device, dev_ptr_starts, dev_ptr_starts + n_cells, dev_ptr_starts, func);
+		cudaDeviceSynchronize();
 		thrust::transform(thrust::device, dev_ptr_ends, dev_ptr_ends + n_cells, dev_ptr_ends, func);
+		cudaDeviceSynchronize();
 	}
 	else
 	{
@@ -134,6 +179,7 @@ void Grid::CleanAfterAllCount(Fishes fishes)
 	{
 		auto dev_ptr_indices = thrust::device_pointer_cast(indices);
 		thrust::transform(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, dev_ptr_indices, func);
+		cudaDeviceSynchronize();
 	}
 	else
 	{
@@ -145,13 +191,9 @@ void Grid::CleanAfterAllCount(Fishes fishes)
 
 void Grid::h_AllocateMemory()
 {
-	// Allocate array of ints size number of fishes
 	cell_id = (int*)malloc(sizeof(int) * n_fishes);
-	// Allocate array of ints size number of fishes
 	fish_id = (int*)malloc(sizeof(int) * n_fishes);
-	// Allocate array of ints size number of cells
 	cells_starts = (int*)malloc(sizeof(int) * n_cells);
-	// Allocate array if ints size number of cells
 	cells_ends = (int*)malloc(sizeof(int) * n_cells);
 	indices = (int*)malloc(sizeof(int) * n_fishes);
 	quarter_number = (int*)malloc(sizeof(int) * n_fishes);

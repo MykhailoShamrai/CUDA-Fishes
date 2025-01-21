@@ -8,9 +8,10 @@
 __global__ void CountForFishes(Grid grid, Options* options, Fishes fishes, float* buffer, int n)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
-	if (i >= n)
-		return;
-	int indexOfFish = fishes.CountForAFish(i, &grid, options);
-	// Hardcoded parameters for triangles
-	fishes.FindTrianglesForAFish(indexOfFish, buffer, 10, 6);
+	if (i < n)
+	{
+		int indexOfFish = fishes.CountForAFish(i, &grid, options);
+		// Hardcoded parameters for triangles
+		fishes.FindTrianglesForAFish(indexOfFish, buffer, 10, 6);
+	}
 }

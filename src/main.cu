@@ -11,7 +11,7 @@
 #include <cuda_gl_interop.h>
 #include "../main_loop/main_loop_gpu.cuh"
 
-#define NUMBER_OF_FISHES 10753
+#define NUMBER_OF_FISHES 10000
 #define WIDTH 800
 #define HEIGHT 600
 
@@ -198,7 +198,6 @@ int main()
 			CountForFishes << <numBlocks, THREAD_NUMBER >> > (d_grid, d_options, d_fishes, d_trianglesVertices, NUMBER_OF_FISHES);
 			checkCudaErrors(cudaGetLastError());
 			checkCudaErrors(cudaDeviceSynchronize());
-			printf("----------------------------------------------------------\n");
 			d_grid.CleanStartsAndEnds();
 			d_grid.CleanAfterAllCount(d_fishes);
 

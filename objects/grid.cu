@@ -44,8 +44,6 @@ static bool verifyArrayIndices(int* array, int n)
 	std::set<int> set_test{};
 	for (int i = 0; i < n; i++)
 	{
-		if (array[i] == 0)
-			printf("%d\n", 0);
 		auto res = set_test.insert(array[i]);
 		if (!res.second)
 		{
@@ -100,7 +98,6 @@ void Grid::FindCellsForFishes(Fishes fishes)
 		assert(verifyCudaArrayIndices(fish_id, n_fishes));
 		thrust::transform(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, dev_ptr_quarters, funcQ);
 		cudaDeviceSynchronize();
-		printf("--\n");
 		assert(verifyCudaArrayIndices(fish_id, n_fishes));
 	}
 	else
@@ -119,7 +116,6 @@ void Grid::SortCellsWithFishes()
 		auto dev_ptr_fish_id = thrust::device_pointer_cast(fish_id);
 		thrust::sort_by_key(thrust::device, dev_ptr_cell_id, dev_ptr_cell_id + n_fishes, dev_ptr_fish_id);
 		cudaDeviceSynchronize();
-		printf("Sorting\n");
 		assert(verifyCudaArrayIndices(fish_id, n_fishes));
 	}
 	else

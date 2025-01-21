@@ -1,9 +1,12 @@
+#define _USE_MATH_DEFINES
+
 #include "fishes.cuh"
 #include <stdlib.h>
 #include "../third_party/cuda-samples/helper_math.h"
 #include "grid.cuh"
 #include "options.cuh"
 #include "../include/helpers.cuh"
+#include <cmath>
 
 Fishes::Fishes(int n, bool onGpu): n(n), onGpu(onGpu)
 {
@@ -265,6 +268,27 @@ __host__ __device__ void Fishes::FindTrianglesForAFish(int index, float* buffer,
 	buffer[indexInBuffer + 3] = second.y;
 	buffer[indexInBuffer + 4] = third.x;
 	buffer[indexInBuffer + 5] = third.y;
+}
+
+__host__ __device__ void Fishes::FindCircleForFish(int index, float* buffer, int radius, int number_of_points)
+{
+	float2 currentPosition;
+	currentPosition.x = x_after_movement[index];
+	currentPosition.y = y_after_movement[index];
+	int indexInBuffer = number_of_points * 2 * index;
+	float2 directVect;
+	directVect.x = 1.0f;
+	directVect.y = 0.0f;
+	float step = 2.0f * M_PI / number_of_points;
+	for (int i = 0; i < number_of_points; i++)
+	{
+		float step_now = step * i;
+		float2 vect = float2();
+		vect.x = directVect.x * cosf(step_now) - directVect.y * sinf(step_now);
+		vect.y = directVect.x * sinf(step_now) + directVect.y * sinf(step_now);
+		buffer[indexInBuffer++] = currentPosition.x + vect.x * radius;
+		buffer[indexInBuffer++] = currentPosition.y + vect.y * radius;
+	}
 }
 
 

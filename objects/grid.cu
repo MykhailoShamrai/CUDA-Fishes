@@ -132,6 +132,23 @@ void Grid::FindStartsAndEnds()
 		auto dev_ptr_indices = thrust::device_pointer_cast(indices);
 		thrust::transform(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, dev_ptr_indices, func);
 		cudaDeviceSynchronize();
+		//std::vector<int> starts(n_cells, 0);
+		//std::vector<int> ends(n_cells, 0);
+		//std::vector<int> cells(n_fishes, 0);
+		//std::vector<int> fishes(n_fishes, 0);
+		//checkCudaErrors(cudaMemcpy(starts.data(), cells_starts, n_cells * sizeof(int), cudaMemcpyDeviceToHost));
+		//checkCudaErrors(cudaMemcpy(ends.data(), cells_ends, n_cells * sizeof(int), cudaMemcpyDeviceToHost));
+		//checkCudaErrors(cudaMemcpy(cells.data(), cell_id, n_fishes * sizeof(int), cudaMemcpyDeviceToHost));
+		//checkCudaErrors(cudaMemcpy(fishes.data(), fish_id, n_fishes * sizeof(int), cudaMemcpyDeviceToHost));
+		//for (int i = 0; i < n_fishes; i++)
+		//{
+		//	printf("cell: %d, fish: %d\n", cells[i], fishes[i]);
+		//}
+		//printf("--- ---- ---- ---\n");
+		//for (int i = 0; i < n_cells; i++)
+		//{
+		//	printf("cell number: %d, cell start: %d, cell end: %d\n", i, starts[i], ends[i]);
+		//}
 	}
 	else
 	{

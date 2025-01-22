@@ -12,7 +12,7 @@
 #include "../main_loop/main_loop_gpu.cuh"
 #include <vector>
 
-#define NUMBER_OF_FISHES 5000
+#define NUMBER_OF_FISHES 40
 #define WIDTH 1600
 #define HEIGHT 900
 
@@ -192,7 +192,7 @@ int main()
 	cudaEvent_t start_circles, stop_circles;
 	cudaEventCreate(&start_circles);
 	cudaEventCreate(&stop_circles);
-
+	d_grid.CleanStartsAndEnds();
 	while (!glfwWindowShouldClose(window))
 	{
 		// Imgui window

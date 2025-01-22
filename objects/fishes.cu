@@ -135,6 +135,29 @@ void Fishes::d_CopyFishesFromCPU(float* x_before_movement, float* y_before_movem
 	}
 }
 
+__host__ __device__ bool CheckIfCellsAreNotEqual(int* table, int n)
+{
+	for (int i = 0; i < n; i++)
+	{
+		for (int j = i + 1; j < n; j++)
+		{
+			if (table[i] == table[j])
+				return false;
+		}
+	}
+	return true;
+}
+
+__host__ __device__ bool CheckCell(int cellIndex, int start, int i)
+{
+	if (start < 0 && i == 0)
+	{
+		printf("Error in: One fish at least does exist %d\n", cellIndex);
+		return false;
+	}
+	return true;
+}
+
 __host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* options)
 {
 	float maxVel = options->maxVelNormalFishes;
@@ -207,7 +230,43 @@ __host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* op
 	default:
 		break;
 	}
+	cellsForSearch[1] = x1 + numberOfCells_x * y1;
+	cellsForSearch[2] = x2 + numberOfCells_x * y2;
+	cellsForSearch[3] = x3 + numberOfCells_x * y3;
+
+	assert(CheckIfCellsAreNotEqual(cellsForSearch, 4));
 	// Interaction counting 
+	float2 fishPosition = float2();
+	fishPosition.x = x_before_movement[indexOfFish];
+	fishPosition.y = y_before_movement[indexOfFish];
+
+	float2 alignmentPart = float2();
+	alignmentPart.x = 0.0f;
+	alignmentPart.y = 0.0f;
+	int numberOfFriends = 0;
+	for (int i = 0; i < 4; i++)
+	{
+		int cellStart = grid->cells_starts[cellsForSearch[i]];
+		int cellEnd = grid->cells_ends[cellsForSearch[i]];
+		assert(CheckCell(cellsForSearch[i], cellStart, i));
+		assert(CheckCell(cellsForSearch[i], cellEnd, i));
+
+		if (cellStart >= 0 && cellEnd >= 0)
+		{
+			for (int j = cellStart; j <= cellEnd; j++)
+			{
+				// If it's not the same fish
+				int friendId = grid->fish_id[j];
+				if (friendId != indexOfFish)
+				{
+					float2 posOfFriend;
+					posOfFriend.x = x_before_movement[friendId];
+					posOfFriend.y = y_before_movement[friendId];
+				}
+			}
+		}
+	}
+
 
 	float2 velBeforeInteraction = float2();
 	velBeforeInteraction.x = x_vel_before_movement[indexOfFish];

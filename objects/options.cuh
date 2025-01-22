@@ -10,6 +10,6 @@ struct __align__(16) Options
 	float cohesionNormalFishes = 1.0f;
 	float minVelNormalFishes = 1.0f;
 	float maxVelNormalFishes = 10.0f;
-	float radiusNormalFishes = 20.0f;
+	float radiusNormalFishes = 40.0f;
 	int angleNormalFishes = 60;
 };

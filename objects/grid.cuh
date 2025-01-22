@@ -67,7 +67,7 @@ public:
 		float x = xPosition[index];
 		float y = yPosition[index];
 		float transformed_x = x + width / 2;
-		float transformed_y = y + height / 2;
+		float transformed_y = -y + height / 2;
 		int x_index = (transformed_x) / sizeOfCell;
 		int y_index = (transformed_y) / sizeOfCell;
 		return x_index + nXCells * y_index;
@@ -95,7 +95,7 @@ public:
 		float x = xPosition[index];
 		float y = yPosition[index];
 		float transformed_x = x + width / 2;
-		float transformed_y = y + height / 2;
+		float transformed_y = -y + height / 2;
 		int idOfCell = cellId[index];
 		int i = idOfCell % nXCells;
 		int j = idOfCell / nXCells;

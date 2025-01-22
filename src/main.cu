@@ -12,7 +12,7 @@
 #include "../main_loop/main_loop_gpu.cuh"
 #include <vector>
 
-#define NUMBER_OF_FISHES 40
+#define NUMBER_OF_FISHES 20
 #define WIDTH 1600
 #define HEIGHT 900
 

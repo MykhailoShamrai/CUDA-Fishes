@@ -98,8 +98,8 @@ void Fishes::GenerateRandomFishes(int width, int height, float minVel, float max
 		this->y_before_movement[i] = rand_float_test(lowHeight, highHeight);
 		// Random normal vector in 2D
 		float2 vel = float2();
-		vel.x = 2.0f;
-		vel.y = 2.0f;
+		vel.x = rand_float_test(-1.0f, 1.0f);
+		vel.y = rand_float_test(-1.0f, 1.0f);
 		//float velValue = rand_float(minVel, maxVel);
 		//vel *= velValue;
 		this->x_vel_before_movement[i] = vel.x;
@@ -168,6 +168,9 @@ __host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* op
 	int width = options->width;
 	int height = options->height;
 
+	float radiusForFish = options->radiusNormalFishes;
+	float angleForFish = options->angleNormalFishes;
+
 	int indexOfFish = grid->fish_id[index];
 
 	int indexOfCell = grid->cell_id[index];
@@ -188,10 +191,10 @@ __host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* op
 	int y1;
 	int y2;
 	int y3;
-	int x_rr = (x_ind + 1) % numberOfCells_x;
-	int x_ll = (x_ind - 1) >= 0 ? x_ind - 1 : numberOfCells_x - 1;
-	int y_tt = (y_ind - 1) >= 0 ? y_ind - 1 : numberOfCells_y - 1;
-	int y_bb = (y_ind + 1) % numberOfCells_y;
+	int x_rr = (x_ind + 1) < numberOfCells_x ? x_ind + 1 : -1;
+	int x_ll = (x_ind - 1) >= 0 ? x_ind - 1 : - 1;
+	int y_tt = (y_ind - 1) >= 0 ? y_ind - 1 : - 1;
+	int y_bb = (y_ind + 1) < numberOfCells_y ? y_ind + 1: -1;
 	// Finding where should we check fishes for interaction
 	switch (quarterNumber)
 	{
@@ -230,60 +233,117 @@ __host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* op
 	default:
 		break;
 	}
-	cellsForSearch[1] = x1 + numberOfCells_x * y1;
-	cellsForSearch[2] = x2 + numberOfCells_x * y2;
-	cellsForSearch[3] = x3 + numberOfCells_x * y3;
-
-	assert(CheckIfCellsAreNotEqual(cellsForSearch, 4));
-	// Interaction counting 
+	if (x1 >= 0 && y1 >= 0)
+	{
+		cellsForSearch[1] = x1 + numberOfCells_x * y1;
+	}
+	if (x2 >= 0 && y2 >= 0)
+	{
+		cellsForSearch[2] = x2 + numberOfCells_x * y2;
+	}
+	if (x3 >= 0 && y3 >= 0)
+	{
+		cellsForSearch[3] = x3 + numberOfCells_x * y3;
+	}
 	float2 fishPosition = float2();
 	fishPosition.x = x_before_movement[indexOfFish];
 	fishPosition.y = y_before_movement[indexOfFish];
 
-	float2 alignmentPart = float2();
-	alignmentPart.x = 0.0f;
-	alignmentPart.y = 0.0f;
-	int numberOfFriends = 0;
-	for (int i = 0; i < 4; i++)
-	{
-		int cellStart = grid->cells_starts[cellsForSearch[i]];
-		int cellEnd = grid->cells_ends[cellsForSearch[i]];
-		assert(CheckCell(cellsForSearch[i], cellStart, i));
-		assert(CheckCell(cellsForSearch[i], cellEnd, i));
-
-		if (cellStart >= 0 && cellEnd >= 0)
-		{
-			for (int j = cellStart; j <= cellEnd; j++)
-			{
-				// If it's not the same fish
-				int friendId = grid->fish_id[j];
-				if (friendId != indexOfFish)
-				{
-					float2 posOfFriend;
-					posOfFriend.x = x_before_movement[friendId];
-					posOfFriend.y = y_before_movement[friendId];
-				}
-			}
-		}
-	}
-
+	//assert(CheckIfCellsAreNotEqual(cellsForSearch, 4));
+	// Interaction counting 
 
 	float2 velBeforeInteraction = float2();
 	velBeforeInteraction.x = x_vel_before_movement[indexOfFish];
 	velBeforeInteraction.y = y_vel_before_movement[indexOfFish];
+
+	float2 alignmentPart = float2();
+	alignmentPart.x = 0.0f;
+	alignmentPart.y = 0.0f;
+	float2 borderAvoidance = float2();
+	borderAvoidance.x = 0.0f;
+	borderAvoidance.y = 0.0f;
+	// Firstly, for every fish we should count the border avoidance force
+
+	
+	// The fish for which we are counting
+	int numberOfFriends = 1;
+
+	float2 dirVectForAFish = cuda_examples::normalize(velBeforeInteraction);
+
+	float2 leftBorderOfVisibilityVector = float2();
+	leftBorderOfVisibilityVector.x = dirVectForAFish.x * cosf(angleForFish) -
+		dirVectForAFish.y * sinf(angleForFish);
+	leftBorderOfVisibilityVector.y = dirVectForAFish.x * sinf(angleForFish) +
+		dirVectForAFish.y * cosf(angleForFish);
+
+	// All cosinuses that are less than this cosinus are not visible
+	float cosBetweenBorderAndDirection = cuda_examples::dot(dirVectForAFish, leftBorderOfVisibilityVector);
+	for (int i = 0; i < 4; i++)
+	{
+		if (cellsForSearch[i] != -1)
+		{
+			int cellStart = grid->cells_starts[cellsForSearch[i]];
+			int cellEnd = grid->cells_ends[cellsForSearch[i]];
+			assert(CheckCell(cellsForSearch[i], cellStart, i));
+			assert(CheckCell(cellsForSearch[i], cellEnd, i));
+
+			if (cellStart >= 0 && cellEnd >= 0)
+			{
+				for (int j = cellStart; j <= cellEnd; j++)
+				{
+					// If it's not the same fish
+					int friendId = grid->fish_id[j];
+					if (friendId != indexOfFish)
+					{
+						float2 posOfFriend;
+						posOfFriend.x = x_before_movement[friendId];
+						posOfFriend.y = y_before_movement[friendId];
+						float2 velOfFriend;
+						velOfFriend.x = x_before_movement[friendId];
+						velOfFriend.y = y_before_movement[friendId];
+						float2 dirOfFriend = cuda_examples::normalize(velOfFriend);
+						assert(cuda_examples::length(dirOfFriend) <= 1.0f + 10e-6 && cuda_examples::length(dirOfFriend) >= 1.0f - 10e-6);
+						float2 vectToFriend = posOfFriend - fishPosition;
+						assert(cuda_examples::length(vectToFriend) > 10e-6);
+						float2 dirToFriend = cuda_examples::normalize(vectToFriend);
+						// Check if friend is valid and fish can see it
+						assert(cuda_examples::length(vectToFriend) >= 0 && cuda_examples::length(vectToFriend) < 20000);
+						assert(cuda_examples::dot(dirVectForAFish, dirToFriend) >= -1.0f - 10e-6 && cuda_examples::dot(dirVectForAFish, dirToFriend) <= 1.0f + 10e-6);
+						if (cuda_examples::length(vectToFriend) <= radiusForFish &&
+							cuda_examples::dot(dirVectForAFish, dirToFriend) <= cosBetweenBorderAndDirection)
+						{
+							++numberOfFriends;
+							// Alignment part
+							float2 diffInDirectionsAndVels = velOfFriend - velBeforeInteraction;
+							alignmentPart += diffInDirectionsAndVels;
+						}
+					}
+				}
+			}
+		}
+	}
+	alignmentPart = alignmentNormal * alignmentPart / numberOfFriends;
 	float2 additionalVel = float2();
 	additionalVel.x = 0.0f;
 	additionalVel.y = 0.0f;
+	additionalVel += alignmentPart;
 	float2 velAfterCount = velBeforeInteraction + additionalVel;
+
 	float valueOfVel = cuda_examples::length(velAfterCount);
+	
 	float2 directionVect = cuda_examples::normalize(velAfterCount);
+	float eps = 10e-6;
+	assert(abs(cuda_examples::length(velAfterCount) >= eps));
+	assert(abs(cuda_examples::length(directionVect)) <= 1 + eps);
 	if (valueOfVel > maxVel)
 	{
 		velAfterCount = directionVect * maxVel;
+		assert(abs(cuda_examples::length(velAfterCount)) <= maxVel + eps);
 	}
 	else if (valueOfVel < minVel)
 	{
 		velAfterCount = directionVect * minVel;
+		assert(abs(cuda_examples::length(velAfterCount)) <= minVel + eps);
 	}
 	// Adding velocity to position and also adding changing velocity in an array
 	float xAfterMovement = x_before_movement[indexOfFish] + velAfterCount.x;

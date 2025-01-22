@@ -158,45 +158,23 @@ __host__ __device__ bool CheckCell(int cellIndex, int start, int i)
 	return true;
 }
 
-__host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* options)
+__host__ __device__ void FillArrayForSearch(int indexOfCell, int quarter, int* array, int n, 
+	int numberOfCellsY, int numberOfCellsX, int x_ind, int y_ind)
 {
-	float maxVel = options->maxVelNormalFishes;
-	float minVel = options->minVelNormalFishes;
-	float cohesionNormal = options->cohesionNormalFishes;
-	float alignmentNormal = options->alignmentNormalFishes;
-	float separationNormal = options->separationNormalFishes;
-	int width = options->width;
-	int height = options->height;
-
-	float radiusForFish = options->radiusNormalFishes;
-	float angleForFish = options->angleNormalFishes;
-
-	int indexOfFish = grid->fish_id[index];
-
-	int indexOfCell = grid->cell_id[index];
-
-	int numberOfCells = grid->ReturnNumberOfCells();
-	int numberOfCells_x = grid->ReturnNumberOfCellsX();
-	int numberOfCells_y = grid->ReturnNumberOfCellsY();
-
-	int x_ind = indexOfCell % numberOfCells_x;
-	int y_ind = indexOfCell / numberOfCells_x;
-	// Four cells for each quarter
-	int cellsForSearch[4];
-	int quarterNumber = grid->quarter_number[index];
-	cellsForSearch[0] = indexOfCell;
+	assert(n == 4);
+	array[0] = indexOfCell;
 	int x1;
 	int x2;
 	int x3;
 	int y1;
 	int y2;
 	int y3;
-	int x_rr = (x_ind + 1) < numberOfCells_x ? x_ind + 1 : -1;
-	int x_ll = (x_ind - 1) >= 0 ? x_ind - 1 : - 1;
-	int y_tt = (y_ind - 1) >= 0 ? y_ind - 1 : - 1;
-	int y_bb = (y_ind + 1) < numberOfCells_y ? y_ind + 1: -1;
+	int x_rr = (x_ind + 1) < numberOfCellsX ? x_ind + 1 : -1;
+	int x_ll = (x_ind - 1) >= 0 ? x_ind - 1 : -1;
+	int y_tt = (y_ind - 1) >= 0 ? y_ind - 1 : -1;
+	int y_bb = (y_ind + 1) < numberOfCellsY ? y_ind + 1 : -1;
 	// Finding where should we check fishes for interaction
-	switch (quarterNumber)
+	switch (quarter)
 	{
 	case 1:
 		x1 = x_rr;
@@ -233,25 +211,59 @@ __host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* op
 	default:
 		break;
 	}
+	array[1] = -1;
+	array[2] = -1;
+	array[3] = -1;
 	if (x1 >= 0 && y1 >= 0)
 	{
-		cellsForSearch[1] = x1 + numberOfCells_x * y1;
+		array[1] = x1 + numberOfCellsX * y1;
 	}
 	if (x2 >= 0 && y2 >= 0)
 	{
-		cellsForSearch[2] = x2 + numberOfCells_x * y2;
+		array[2] = x2 + numberOfCellsX * y2;
 	}
 	if (x3 >= 0 && y3 >= 0)
 	{
-		cellsForSearch[3] = x3 + numberOfCells_x * y3;
+		array[3] = x3 + numberOfCellsX * y3;
 	}
+}
+
+__host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* options)
+{
+	float maxVel = options->maxVelNormalFishes;
+	float minVel = options->minVelNormalFishes;
+	float cohesionNormal = options->cohesionNormalFishes;
+	float alignmentNormal = options->alignmentNormalFishes;
+	float separationNormal = options->separationNormalFishes;
+	int width = options->width;
+	int height = options->height;
+
+	float radiusForFish = options->radiusNormalFishes;
+	float angleForFish = options->angleNormalFishes;
+	float wallAvoidanceKoef = options->forceForWallAvoidance;
+
+	int indexOfFish = grid->fish_id[index];
+
+	int indexOfCell = grid->cell_id[index];
+
+	int numberOfCells = grid->ReturnNumberOfCells();
+	int numberOfCells_x = grid->ReturnNumberOfCellsX();
+	int numberOfCells_y = grid->ReturnNumberOfCellsY();
+
+	int x_ind = indexOfCell % numberOfCells_x;
+	int y_ind = indexOfCell / numberOfCells_x;
+	// Four cells for each quarter
+	int cellsForSearch[4];
+	int quarterNumber = grid->quarter_number[index];
+	FillArrayForSearch(indexOfCell, quarterNumber, cellsForSearch, 4, numberOfCells_y, numberOfCells_x,
+		x_ind, y_ind);
+
 	float2 fishPosition = float2();
 	fishPosition.x = x_before_movement[indexOfFish];
 	fishPosition.y = y_before_movement[indexOfFish];
 
 	//assert(CheckIfCellsAreNotEqual(cellsForSearch, 4));
 	// Interaction counting 
-
 	float2 velBeforeInteraction = float2();
 	velBeforeInteraction.x = x_vel_before_movement[indexOfFish];
 	velBeforeInteraction.y = y_vel_before_movement[indexOfFish];
@@ -259,12 +271,43 @@ __host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* op
 	float2 alignmentPart = float2();
 	alignmentPart.x = 0.0f;
 	alignmentPart.y = 0.0f;
+
+	float2 separationPart = float2();
+	separationPart.x = 0.0f;
+	separationPart.y = 0.0f;
+
+	float2 cohesionPart = float2();
+	cohesionPart.x = 0.0f;
+	cohesionPart.y = 0.0f;
+
 	float2 borderAvoidance = float2();
 	borderAvoidance.x = 0.0f;
 	borderAvoidance.y = 0.0f;
-	// Firstly, for every fish we should count the border avoidance force
 
-	
+	float distToLeft = fishPosition.x - (-width / 2);
+	if (distToLeft < radiusForFish) {
+		borderAvoidance.x += wallAvoidanceKoef / (distToLeft * distToLeft);
+	}
+
+	// Right border
+	float distToRight = (width / 2) - fishPosition.x;
+	if (distToRight < radiusForFish) {
+		borderAvoidance.x -= wallAvoidanceKoef / (distToRight * distToRight);
+	}
+
+	// Bottom border
+	float distToBottom = fishPosition.y - (-height / 2);
+	if (distToBottom < radiusForFish) {
+		borderAvoidance.y += wallAvoidanceKoef / (distToBottom * distToBottom);
+	}
+
+	// Top border
+	float distToTop = (height / 2) - fishPosition.y;
+	if (distToTop < radiusForFish) {
+		borderAvoidance.y -= wallAvoidanceKoef / (distToTop * distToTop);
+	}
+
+
 	// The fish for which we are counting
 	int numberOfFriends = 1;
 
@@ -298,35 +341,50 @@ __host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* op
 						float2 posOfFriend;
 						posOfFriend.x = x_before_movement[friendId];
 						posOfFriend.y = y_before_movement[friendId];
+
 						float2 velOfFriend;
 						velOfFriend.x = x_before_movement[friendId];
 						velOfFriend.y = y_before_movement[friendId];
+
 						float2 dirOfFriend = cuda_examples::normalize(velOfFriend);
 						assert(cuda_examples::length(dirOfFriend) <= 1.0f + 10e-6 && cuda_examples::length(dirOfFriend) >= 1.0f - 10e-6);
+
 						float2 vectToFriend = posOfFriend - fishPosition;
 						assert(cuda_examples::length(vectToFriend) > 10e-6);
+
 						float2 dirToFriend = cuda_examples::normalize(vectToFriend);
+
 						// Check if friend is valid and fish can see it
-						assert(cuda_examples::length(vectToFriend) >= 0 && cuda_examples::length(vectToFriend) < 20000);
-						assert(cuda_examples::dot(dirVectForAFish, dirToFriend) >= -1.0f - 10e-6 && cuda_examples::dot(dirVectForAFish, dirToFriend) <= 1.0f + 10e-6);
+						assert(cuda_examples::length(vectToFriend) >= 0);
+						assert(cuda_examples::dot(dirVectForAFish, dirToFriend) >= -1.0f - 10e-6
+							&& cuda_examples::dot(dirVectForAFish, dirToFriend) <= 1.0f + 10e-6);
+
 						if (cuda_examples::length(vectToFriend) <= radiusForFish &&
-							cuda_examples::dot(dirVectForAFish, dirToFriend) <= cosBetweenBorderAndDirection)
+							cuda_examples::dot(dirVectForAFish, dirToFriend) >= cosBetweenBorderAndDirection)
 						{
 							++numberOfFriends;
 							// Alignment part
-							float2 diffInDirectionsAndVels = velOfFriend - velBeforeInteraction;
-							alignmentPart += diffInDirectionsAndVels;
+							alignmentPart += velOfFriend;
+							separationPart -= vectToFriend;
+							cohesionPart += posOfFriend;
 						}
 					}
 				}
 			}
 		}
 	}
+
 	alignmentPart = alignmentNormal * alignmentPart / numberOfFriends;
+	cohesionPart = cohesionNormal * cohesionPart / numberOfFriends;
 	float2 additionalVel = float2();
 	additionalVel.x = 0.0f;
 	additionalVel.y = 0.0f;
-	additionalVel += alignmentPart;
+
+	additionalVel += velBeforeInteraction - alignmentPart;
+	additionalVel += wallAvoidanceKoef * borderAvoidance;
+	additionalVel += separationNormal * separationPart;
+	additionalVel += velBeforeInteraction - cohesionPart;
+
 	float2 velAfterCount = velBeforeInteraction + additionalVel;
 
 	float valueOfVel = cuda_examples::length(velAfterCount);

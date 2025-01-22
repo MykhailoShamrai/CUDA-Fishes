@@ -200,8 +200,8 @@ void Grid::CleanAfterAllCount(Fishes fishes)
 {
 	if (onGpu)
 	{
-		assert(VerifyCudaIfArraysAreNotTheSame(fishes.x_before_movement, fishes.x_after_movement, n_fishes));
-		assert(VerifyCudaIfArraysAreNotTheSame(fishes.y_before_movement, fishes.y_after_movement, n_fishes));
+		//assert(VerifyCudaIfArraysAreNotTheSame(fishes.x_before_movement, fishes.x_after_movement, n_fishes));
+		//assert(VerifyCudaIfArraysAreNotTheSame(fishes.y_before_movement, fishes.y_after_movement, n_fishes));
 		checkCudaErrors(cudaMemcpy(fishes.x_before_movement, fishes.x_after_movement, n_fishes * sizeof(float), cudaMemcpyDeviceToDevice));
 		checkCudaErrors(cudaMemcpy(fishes.y_before_movement, fishes.y_after_movement, n_fishes * sizeof(float), cudaMemcpyDeviceToDevice));
 		checkCudaErrors(cudaMemcpy(fishes.x_vel_before_movement, fishes.x_vel_after_movement, n_fishes * sizeof(float), cudaMemcpyDeviceToDevice));

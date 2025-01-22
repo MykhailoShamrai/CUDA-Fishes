@@ -12,7 +12,7 @@
 #include "../main_loop/main_loop_gpu.cuh"
 #include <vector>
 
-#define NUMBER_OF_FISHES 20
+#define NUMBER_OF_FISHES 3000
 #define WIDTH 1600
 #define HEIGHT 900
 
@@ -257,9 +257,9 @@ int main()
 		glBindVertexArray(VAO_Triangles);
 		glDrawArrays(GL_TRIANGLES, 0, NUMBER_OF_FISHES * 3);
 
-		glUniform4f(colorPosition, 1.0f, 1.0f, 1.0f, 1.0f);
-		glBindVertexArray(VAO_Circles);
-		glMultiDrawArrays(GL_LINE_LOOP, firsts, count, NUMBER_OF_FISHES);
+		//glUniform4f(colorPosition, 1.0f, 1.0f, 1.0f, 1.0f);
+		//glBindVertexArray(VAO_Circles);
+		//glMultiDrawArrays(GL_LINE_LOOP, firsts, count, NUMBER_OF_FISHES);
 
 		// Render with opengl
 		ImGui::Render();

@@ -35,11 +35,11 @@ public:
 	void d_CleanMemory();
 	void h_InitialiseArraysIndicesAndFishes();
 	void d_InitialiseArraysIndicesAndFishes(int* initialisedIndexArray);
-	void FindCellsForFishes(Fishes fishes);
+	void FindCellsForFishes(Fishes& fishes);
 	void SortCellsWithFishes();
 	void FindStartsAndEnds();
 	void CleanStartsAndEnds();
-	void CleanAfterAllCount(Fishes fishes);
+	void CleanAfterAllCount(Fishes& fishes);
 	__host__ __device__ int ReturnNumberOfCells() { return n_cells; };
 	__host__ __device__ int ReturnNumberOfCellsX() { return n_x_cells; };
 	__host__ __device__ int ReturnNumberOfCellsY() { return n_y_cells; };

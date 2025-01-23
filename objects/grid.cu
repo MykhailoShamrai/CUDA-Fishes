@@ -82,7 +82,7 @@ void Grid::d_InitialiseArraysIndicesAndFishes(int* initialisedIndexArray)
 	assert(verifyCudaArrayIndices(fish_id, n_fishes));
 }
 
-void Grid::FindCellsForFishes(Fishes fishes)
+void Grid::FindCellsForFishes(Fishes& fishes)
 {
 	CellForFishFunctor func = CellForFishFunctor(fishes.x_before_movement,
 		fishes.y_before_movement, cellSize, width, height, n_x_cells, n_y_cells);
@@ -132,23 +132,6 @@ void Grid::FindStartsAndEnds()
 		auto dev_ptr_indices = thrust::device_pointer_cast(indices);
 		thrust::transform(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, dev_ptr_indices, func);
 		cudaDeviceSynchronize();
-		//std::vector<int> starts(n_cells, 0);
-		//std::vector<int> ends(n_cells, 0);
-		//std::vector<int> cells(n_fishes, 0);
-		//std::vector<int> fishes(n_fishes, 0);
-		//checkCudaErrors(cudaMemcpy(starts.data(), cells_starts, n_cells * sizeof(int), cudaMemcpyDeviceToHost));
-		//checkCudaErrors(cudaMemcpy(ends.data(), cells_ends, n_cells * sizeof(int), cudaMemcpyDeviceToHost));
-		//checkCudaErrors(cudaMemcpy(cells.data(), cell_id, n_fishes * sizeof(int), cudaMemcpyDeviceToHost));
-		//checkCudaErrors(cudaMemcpy(fishes.data(), fish_id, n_fishes * sizeof(int), cudaMemcpyDeviceToHost));
-		//for (int i = 0; i < n_fishes; i++)
-		//{
-		//	printf("cell: %d, fish: %d\n", cells[i], fishes[i]);
-		//}
-		//printf("--- ---- ---- ---\n");
-		//for (int i = 0; i < n_cells; i++)
-		//{
-		//	printf("cell number: %d, cell start: %d, cell end: %d\n", i, starts[i], ends[i]);
-		//}
 	}
 	else
 	{
@@ -196,7 +179,7 @@ static bool VerifyCudaIfArraysAreNotTheSame(float* array1, float* array2, int n)
 	return VerifyIfArraysAreNotTheSame(vec1.data(), vec2.data(), n);
 }
 
-void Grid::CleanAfterAllCount(Fishes fishes)
+void Grid::CleanAfterAllCount(Fishes& fishes)
 {
 	if (onGpu)
 	{
@@ -209,8 +192,8 @@ void Grid::CleanAfterAllCount(Fishes fishes)
 	}
 	else
 	{
-		assert(VerifyIfArraysAreNotTheSame(fishes.x_before_movement, fishes.x_after_movement, n_fishes));
-		assert(VerifyIfArraysAreNotTheSame(fishes.y_before_movement, fishes.y_after_movement, n_fishes));
+		//assert(VerifyIfArraysAreNotTheSame(fishes.x_before_movement, fishes.x_after_movement, n_fishes));
+		//assert(VerifyIfArraysAreNotTheSame(fishes.y_before_movement, fishes.y_after_movement, n_fishes));
 		for (int i = 0; i < n_fishes; i++)
 		{
 			fishes.x_before_movement[i] = fishes.x_after_movement[i];

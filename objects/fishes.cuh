@@ -18,13 +18,6 @@ public:
 	Fishes(int n, bool onGpu);
 	~Fishes() {};
 
-	enum FishType
-	{
-		NormalFish,
-		LeaderOfNormalFishes,
-		Predator
-	};
-
 	float* x_before_movement;
 	float* y_before_movement;
 	float* x_vel_before_movement;
@@ -35,16 +28,12 @@ public:
 	float* x_vel_after_movement;
 	float* y_vel_after_movement;
 
-	FishType* types;
-
-
 	void h_CleanMemoryForFishes();
 	void d_CleanMemoryForFishes();
 
 	void GenerateRandomFishes(int width, int height, float minVel, float maxVel);
 	void GenerateTestFishes();
-	void d_CopyFishesFromCPU(float* x_before_movement, float* y_before_movement,
-		float* x_vel_before_movement, float* y_vel_before_movement, FishType* types);
+	void d_CopyFishesFromCPU(Fishes& fishes);
 
 	__host__ __device__ int CountForAFish(int index, Grid* grid, Options* options);
 	__host__ __device__ void FindTrianglesForAFish(int index, float* buffer, int lenOfTriang, int widthOfTriang);

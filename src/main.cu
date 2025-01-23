@@ -12,7 +12,7 @@
 #include "../main_loop/main_loop_gpu.cuh"
 #include <vector>
 
-#define NUMBER_OF_FISHES 50
+#define NUMBER_OF_FISHES 3000
 #define WIDTH 1600
 #define HEIGHT 900
 
@@ -84,8 +84,7 @@ int main()
 	h_fishes.GenerateRandomFishes(WIDTH, HEIGHT, 1.0f, 4.0f);
 
 	Fishes d_fishes = Fishes(NUMBER_OF_FISHES, true);
-	d_fishes.d_CopyFishesFromCPU(h_fishes.x_before_movement, h_fishes.y_before_movement,
-		h_fishes.x_vel_before_movement, h_fishes.y_vel_before_movement, h_fishes.types);
+	d_fishes.d_CopyFishesFromCPU(h_fishes);
 
 
 	int success;
@@ -257,9 +256,9 @@ int main()
 		glBindVertexArray(VAO_Triangles);
 		glDrawArrays(GL_TRIANGLES, 0, NUMBER_OF_FISHES * 3);
 
-		glUniform4f(colorPosition, 1.0f, 1.0f, 1.0f, 1.0f);
-		glBindVertexArray(VAO_Circles);
-		glMultiDrawArrays(GL_LINE_LOOP, firsts, count, NUMBER_OF_FISHES);
+		//glUniform4f(colorPosition, 1.0f, 1.0f, 1.0f, 1.0f);
+		//glBindVertexArray(VAO_Circles);
+		//glMultiDrawArrays(GL_LINE_LOOP, firsts, count, NUMBER_OF_FISHES);
 
 		// Render with opengl
 		ImGui::Render();

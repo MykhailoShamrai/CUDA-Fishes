@@ -235,7 +235,7 @@ __host__ __device__ void FillArrayForSearch(int indexOfCell, int quarter, int* a
 	}
 }
 
-__host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* options)
+__host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* options, float cursorX, float cursorY, bool fearingWithCursor)
 {
 	float maxVel = options->maxVelFishes;
 	float minVel = options->minVelFishes;
@@ -250,6 +250,7 @@ __host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* op
 	float angleForFish = options->angleNormalFishes;
 	float wallAvoidanceKoef = options->forceForWallAvoidance;
 	float rangeForWallAvoidance = options->rangeToBorderToStartTurn;
+	float fearKoef = options->powerOfFearForCursor;
 
 	int indexOfFish = grid->fish_id[index];
 
@@ -389,6 +390,28 @@ __host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* op
 		}
 	}
 
+	float2 fearPower = float2();
+	fearPower.x = 0.0f;
+	fearPower.y = 0.0f;
+	
+	float2 cursorPos = float2();
+	cursorPos.x = cursorX;
+	cursorPos.y = cursorY;
+	if (fearingWithCursor)
+	{
+		float2 vectToCursor = fishPosition - cursorPos;
+		float len = cuda_examples::length(vectToCursor);
+		assert(len >= 10e-6);
+		if (len <= radiusForFish)
+		{
+			fearPower += vectToCursor;
+			if (len <= separationRadius)
+			{
+				fearPower += vectToCursor;
+			}
+		}
+	}
+
 	if (numberOfFriends > 0) {
 		alignmentPart = alignmentPart / numberOfFriends;
 		cohesionPart = cohesionPart / numberOfFriends;
@@ -409,6 +432,7 @@ __host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* op
 	additionalVel += borderAvoidance;
 	additionalVel += separationNormal * separationPart;
 	additionalVel += cohesionNormal * (velBeforeInteraction - cohesionPart);
+	additionalVel += fearKoef * fearPower;
 
 	float2 velAfterCount = velBeforeInteraction + additionalVel;
 

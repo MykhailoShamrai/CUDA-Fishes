@@ -10,7 +10,8 @@ __host__ __device__ static bool VerifyIndex(int index, int max_n)
 {
 	return index < max_n;
 }
-__global__ void CountForFishesGpu(Grid grid, Options* options, Fishes fishes, float* buffer, int n)
+__global__ void CountForFishesGpu(Grid grid, Options* options, Fishes fishes, float* buffer, int n,
+	float cursorPosX, float cursorPosY, bool fearingWithCursor)
 {
 	__shared__ Options shared_options;
 	if (threadIdx.x == 0)
@@ -25,7 +26,7 @@ __global__ void CountForFishesGpu(Grid grid, Options* options, Fishes fishes, fl
 		return;
 	}
 	assert(VerifyIndex(i, n));
-	int indexOfFish = fishes.CountForAFish(i, &grid, options);
+	int indexOfFish = fishes.CountForAFish(i, &grid, options, cursorPosX, cursorPosY, fearingWithCursor);
 	// Hardcoded parameters for triangles
 	fishes.FindTrianglesForAFish(indexOfFish, buffer);
 }

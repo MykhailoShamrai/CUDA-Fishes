@@ -4,11 +4,11 @@
 #include "../objects/options.cuh"
 
 void CountForFishesCpu(Grid& grid, Options& options, Fishes& fishes,
-	float* buffer, int n)
+	float* buffer, int n, float cursorPosX, float cursorPosY, bool fearingWithCursor)
 {
 	for (int i = 0; i < n; i++)
 	{
-		int index = fishes.CountForAFish(i, &grid, &options);
+		int index = fishes.CountForAFish(i, &grid, &options, cursorPosX, cursorPosY, fearingWithCursor);
 		fishes.FindTrianglesForAFish(index, buffer);
 	}
 }

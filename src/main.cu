@@ -13,7 +13,7 @@
 #include "../main_loop/main_loop_cpu.cuh"
 #include <vector>
 
-#define NUMBER_OF_FISHES 20
+#define NUMBER_OF_FISHES 2000
 #define WIDTH 1600
 #define HEIGHT 900
 
@@ -21,6 +21,10 @@
 
 #define THREAD_NUMBER 128
 
+float cursorPosX = 0.0f;
+float cursorPosY = 0.0f;
+
+static bool fearingWithCursor = false;
 static bool withGpu = true;
 static bool withGpuChanged = false;
 static bool circleDrawing = false;
@@ -54,6 +58,16 @@ static void key_press_callback(GLFWwindow* window, int key, int scancode, int ac
 	{
 		withGpuChanged = true;
 	}
+	else if (key == GLFW_KEY_F && action == GLFW_PRESS)
+	{
+		fearingWithCursor = !fearingWithCursor;
+	}
+}
+
+static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+{
+	cursorPosX = (float)xpos - WIDTH / 2;
+	cursorPosY = -(float)ypos + HEIGHT / 2;
 }
 
 int main()
@@ -77,6 +91,7 @@ int main()
 
 	glfwMakeContextCurrent(window);
 	glfwSetKeyCallback(window, key_press_callback);
+	glfwSetCursorPosCallback(window, cursor_position_callback);
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
@@ -289,7 +304,8 @@ int main()
 			d_grid.SortCellsWithFishes();
 			d_grid.FindStartsAndEnds();
 			// Count for every fish the next position and velocity
-			CountForFishesGpu << <numBlocks, THREAD_NUMBER >> > (d_grid, d_options, d_fishes, d_trianglesVertices, NUMBER_OF_FISHES);
+			CountForFishesGpu << <numBlocks, THREAD_NUMBER >> > (d_grid, d_options, d_fishes, d_trianglesVertices, NUMBER_OF_FISHES,
+				cursorPosX, cursorPosY, fearingWithCursor);
 			checkCudaErrors(cudaGetLastError());
 			checkCudaErrors(cudaDeviceSynchronize());
 			d_grid.CleanStartsAndEnds();
@@ -346,7 +362,8 @@ int main()
 			h_grid.SortCellsWithFishes();
 			h_grid.FindStartsAndEnds();
 
-			CountForFishesCpu(h_grid, h_options, h_fishes, h_triangles_buffer, NUMBER_OF_FISHES);
+			CountForFishesCpu(h_grid, h_options, h_fishes, h_triangles_buffer, NUMBER_OF_FISHES, cursorPosX, cursorPosY,
+				fearingWithCursor);
 
 			h_grid.CleanStartsAndEnds();
 			h_grid.CleanAfterAllCount(h_fishes);

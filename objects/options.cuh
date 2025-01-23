@@ -22,6 +22,8 @@ struct __align__(16) Options
 	float minVelFishes = 0.5f;
 	float maxVelFishes = 3.0f;
 
+	float powerOfFearForCursor = 0.01f;
+
 	void resetToDefaults()
 	{
 		separationForFishes = 0.05f;

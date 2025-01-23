@@ -37,7 +37,7 @@ public:
 	void d_CopyFishesFromCPU(Fishes& fishes);
 	void h_CopyFishesFromGPU(Fishes& fishes);
 
-	__host__ __device__ int CountForAFish(int index, Grid* grid, Options* options);
+	__host__ __device__ int CountForAFish(int index, Grid* grid, Options* options, float cursorX, float cursorY, bool fearingWithCursor);
 	__host__ __device__ void FindTrianglesForAFish(int index, float* buffer);
 	__host__ __device__ void FindCircleForFish(int index, float* buffer, int radius, int number_of_points);
 };

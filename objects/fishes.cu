@@ -364,7 +364,7 @@ __host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* op
 						{
 							++numberOfFriends;
 							// Alignment part
-							alignmentPart += velOfFriend;
+							alignmentPart += dirOfFriend;
 							separationPart -= vectToFriend;
 							cohesionPart += posOfFriend;
 						}
@@ -374,16 +374,23 @@ __host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* op
 		}
 	}
 
-	alignmentPart = alignmentNormal * alignmentPart / numberOfFriends;
+	if (numberOfFriends > 1) {
+		alignmentPart = alignmentNormal * cuda_examples::normalize(alignmentPart / numberOfFriends);
+	}
+	else {
+		alignmentPart.x = 0.0f;
+		alignmentPart.y = 0.0f;
+	}
 	cohesionPart = cohesionNormal * cohesionPart / numberOfFriends;
+	separationPart = separationPart / numberOfFriends;
 	float2 additionalVel = float2();
 	additionalVel.x = 0.0f;
 	additionalVel.y = 0.0f;
 
-	additionalVel += velBeforeInteraction - alignmentPart;
+	additionalVel += alignmentPart;
 	additionalVel += wallAvoidanceKoef * borderAvoidance;
-	additionalVel += separationNormal * separationPart;
-	additionalVel += velBeforeInteraction - cohesionPart;
+	//additionalVel += separationNormal * separationPart;
+	//additionalVel += velBeforeInteraction - cohesionPart;
 
 	float2 velAfterCount = velBeforeInteraction + additionalVel;
 
@@ -435,9 +442,9 @@ __host__ __device__ void Fishes::FindTrianglesForAFish(int index, float* buffer,
 	float2 normal = float2();
 	normal.x = -direction.y;
 	normal.y = direction.x;
-	float2 first = 4 * direction + currentPosition;
-	float2 second = 2 * normal + currentPosition;
-	float2 third = 2 * -normal + currentPosition;
+	float2 first = 7 * direction + currentPosition;
+	float2 second = 3 * normal + currentPosition;
+	float2 third = 3 * -normal + currentPosition;
 	int indexInBuffer = index * 6; // W have 6 elements for each fish
 	buffer[indexInBuffer] = first.x;
 	buffer[indexInBuffer + 1] = first.y;

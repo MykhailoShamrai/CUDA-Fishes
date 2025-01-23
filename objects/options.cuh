@@ -9,11 +9,11 @@ struct __align__(16) Options
 	int height = 900;
 
 	float separationNormalFishes = 0.08f;
-	float alignmentNormalFishes = 0.005f;
-	float cohesionNormalFishes = 0.005f;
+	float alignmentNormalFishes = 0.8f;
+	float cohesionNormalFishes = 0.09f;
 	float minVelNormalFishes = 1.0f;
-	float maxVelNormalFishes = 3.0f;
-	float radiusNormalFishes = 20.0f;
+	float maxVelNormalFishes = 2.0f;
+	float radiusNormalFishes = 50.0f;
 	float angleNormalFishes = 3 * M_PI / 4;
 	float forceForWallAvoidance = 10.0f;
 };

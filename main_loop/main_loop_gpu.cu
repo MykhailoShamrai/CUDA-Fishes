@@ -12,6 +12,13 @@ __host__ __device__ static bool VerifyIndex(int index, int max_n)
 }
 __global__ void CountForFishes(Grid grid, Options* options, Fishes fishes, float* buffer, int n)
 {
+	__shared__ Options shared_options;
+	if (threadIdx.x == 0)
+	{
+		shared_options = *options;
+	}
+	__syncthreads();
+
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 	if (i >= n)
 	{

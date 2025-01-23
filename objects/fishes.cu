@@ -216,16 +216,16 @@ __host__ __device__ void FillArrayForSearch(int indexOfCell, int quarter, int* a
 
 __host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* options)
 {
-	float maxVel = options->maxVelNormalFishes;
-	float minVel = options->minVelNormalFishes;
-	float cohesionNormal = options->cohesionNormalFishes;
-	float alignmentNormal = options->alignmentNormalFishes;
-	float separationNormal = options->separationNormalFishes;
+	float maxVel = options->maxVelFishes;
+	float minVel = options->minVelFishes;
+	float cohesionNormal = options->cohesionForFishes;
+	float alignmentNormal = options->alignmentForFishes;
+	float separationNormal = options->separationForFishes;
 	float separationRadius = options->radiusSeparation;
 	int width = options->width;
 	int height = options->height;
 
-	float radiusForFish = options->radiusNormalFishes;
+	float radiusForFish = options->radiusForFishes;
 	float angleForFish = options->angleNormalFishes;
 	float wallAvoidanceKoef = options->forceForWallAvoidance;
 	float rangeForWallAvoidance = options->rangeToBorderToStartTurn;

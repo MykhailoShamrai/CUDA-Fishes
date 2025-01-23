@@ -12,11 +12,11 @@
 #include "../main_loop/main_loop_gpu.cuh"
 #include <vector>
 
-#define NUMBER_OF_FISHES 3000
+#define NUMBER_OF_FISHES 2000
 #define WIDTH 1600
 #define HEIGHT 900
 
-#define NUMBER_OF_POINTS_FOR_TRIANGLE 32
+#define NUMBER_OF_POINTS_FOR_TRIANGLE 16
 
 #define THREAD_NUMBER 128
 
@@ -171,8 +171,8 @@ int main()
 	checkCudaErrors(cudaMalloc((void**)&d_options, sizeof(Options)));
 	checkCudaErrors(cudaMemcpy(d_options, &h_options, sizeof(Options), cudaMemcpyHostToDevice));
 
-	Grid h_grid = Grid(NUMBER_OF_FISHES, h_options.radiusNormalFishes, WIDTH, HEIGHT, false);
-	Grid d_grid = Grid(NUMBER_OF_FISHES, h_options.radiusNormalFishes, WIDTH, HEIGHT, true);
+	Grid h_grid = Grid(NUMBER_OF_FISHES, h_options.radiusForFishes, WIDTH, HEIGHT, false);
+	Grid d_grid = Grid(NUMBER_OF_FISHES, h_options.radiusForFishes, WIDTH, HEIGHT, true);
 	h_grid.h_InitialiseArraysIndicesAndFishes();
 	d_grid.d_InitialiseArraysIndicesAndFishes(h_grid.indices);
 
@@ -192,13 +192,37 @@ int main()
 	cudaEventCreate(&start_circles);
 	cudaEventCreate(&stop_circles);
 	d_grid.CleanStartsAndEnds();
+	bool valuesChanged = false;
 	while (!glfwWindowShouldClose(window))
 	{
 		// Imgui window
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-		ImGui::ShowDemoWindow();
+
+		// Here I also can print metrics
+		ImGui::Text("Options for fishes:");
+		valuesChanged |= ImGui::SliderFloat("Separation", &h_options.separationForFishes, 0.01f, 1.0f);
+		valuesChanged |= ImGui::SliderFloat("Alignment", &h_options.alignmentForFishes, 0.01f, 1.0f);
+		valuesChanged |= ImGui::SliderFloat("Cohesion", &h_options.cohesionForFishes, 0.00001f, 0.001f, "%.5f");
+
+		valuesChanged |= ImGui::SliderFloat("Max Velocity", &h_options.maxVelFishes, 0.7f, 5.0f);
+		valuesChanged |= ImGui::SliderFloat("Inner radius", &h_options.radiusSeparation, 5.0f, h_options.radiusForFishes);
+
+		valuesChanged |= ImGui::SliderFloat("Force for wall avoidance", &h_options.forceForWallAvoidance, 0.1f, 0.5f);
+		valuesChanged |= ImGui::SliderFloat("Range to border", &h_options.rangeToBorderToStartTurn, 50.0f, 200.0f);
+
+		if (ImGui::Button("Reset to Defaults")) {
+			h_options.resetToDefaults();
+			valuesChanged = true;
+		}
+
+		if (valuesChanged)
+		{
+			valuesChanged = false;
+			checkCudaErrors(cudaMemcpy(d_options, &h_options, sizeof(Options), cudaMemcpyHostToDevice));
+		}
+
 
 
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -231,7 +255,7 @@ int main()
 
 			cudaEventRecord(start_circles);
 			CountCircleForFish << <numBlocks, THREAD_NUMBER >> > (d_fishes, d_circlesVertices, NUMBER_OF_FISHES, NUMBER_OF_POINTS_FOR_TRIANGLE,
-				h_options.radiusNormalFishes);
+				h_options.radiusForFishes);
 			checkCudaErrors(cudaGetLastError());
 			checkCudaErrors(cudaDeviceSynchronize());
 			cudaEventRecord(stop_circles);
@@ -266,7 +290,6 @@ int main()
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
-		//free(test_array);
 	}
 	cudaEventDestroy(start_main);
 	cudaEventDestroy(stop_main);

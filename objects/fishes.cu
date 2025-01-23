@@ -118,6 +118,27 @@ void Fishes::d_CopyFishesFromCPU(Fishes& fishes)
 		checkCudaErrors(cudaMemcpy(this->y_before_movement, fishes.y_before_movement, n * sizeof(float), cudaMemcpyHostToDevice));
 		checkCudaErrors(cudaMemcpy(this->x_vel_before_movement, fishes.x_vel_before_movement, n * sizeof(float), cudaMemcpyHostToDevice));
 		checkCudaErrors(cudaMemcpy(this->y_vel_before_movement, fishes.y_vel_before_movement, n * sizeof(float), cudaMemcpyHostToDevice));
+
+		checkCudaErrors(cudaMemcpy(this->x_after_movement, fishes.x_after_movement, n * sizeof(float), cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(this->y_after_movement, fishes.y_after_movement, n * sizeof(float), cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(this->x_vel_after_movement, fishes.x_vel_after_movement, n * sizeof(float), cudaMemcpyHostToDevice));
+		checkCudaErrors(cudaMemcpy(this->y_vel_after_movement, fishes.y_vel_after_movement, n * sizeof(float), cudaMemcpyHostToDevice));
+	}
+}
+
+void Fishes::h_CopyFishesFromGPU(Fishes& fishes)
+{
+	if (!onGpu)
+	{
+		checkCudaErrors(cudaMemcpy(this->x_before_movement, fishes.x_before_movement, n * sizeof(float), cudaMemcpyDeviceToHost));
+		checkCudaErrors(cudaMemcpy(this->y_before_movement, fishes.y_before_movement, n * sizeof(float), cudaMemcpyDeviceToHost));
+		checkCudaErrors(cudaMemcpy(this->x_vel_before_movement, fishes.x_vel_before_movement, n * sizeof(float), cudaMemcpyDeviceToHost));
+		checkCudaErrors(cudaMemcpy(this->y_vel_before_movement, fishes.y_vel_before_movement, n * sizeof(float), cudaMemcpyDeviceToHost));
+
+		checkCudaErrors(cudaMemcpy(this->x_after_movement, fishes.x_after_movement, n * sizeof(float), cudaMemcpyDeviceToHost));
+		checkCudaErrors(cudaMemcpy(this->y_after_movement, fishes.y_after_movement, n * sizeof(float), cudaMemcpyDeviceToHost));
+		checkCudaErrors(cudaMemcpy(this->x_vel_after_movement, fishes.x_vel_after_movement, n * sizeof(float), cudaMemcpyDeviceToHost));
+		checkCudaErrors(cudaMemcpy(this->y_vel_after_movement, fishes.y_vel_after_movement, n * sizeof(float), cudaMemcpyDeviceToHost));
 	}
 }
 
@@ -426,7 +447,7 @@ __host__ __device__ int Fishes::CountForAFish(int index, Grid* grid, Options* op
 	return indexOfFish;
 }
 
-__host__ __device__ void Fishes::FindTrianglesForAFish(int index, float* buffer, int lenOfTriang, int widthOfTriang)
+__host__ __device__ void Fishes::FindTrianglesForAFish(int index, float* buffer)
 {
 	float2 currentPosition;
 	currentPosition.x = x_after_movement[index];
@@ -471,9 +492,3 @@ __host__ __device__ void Fishes::FindCircleForFish(int index, float* buffer, int
 		buffer[indexInBuffer++] = currentPosition.y + vect.y * radius;
 	}
 }
-
-
-
-
-
-

@@ -1,12 +1,12 @@
 #pragma once
 
 #include <cuda_runtime.h>
-extern struct Fishes;
-extern struct Grid;
-extern struct Options;
+struct Fishes;
+struct Grid;
+struct Options;
 
-__global__ void CountForFishes(Grid grid, Options* options, Fishes fishes,
+__global__ void CountForFishesGpu(Grid grid, Options* options, Fishes fishes,
 	float* buffer, int n);
 
-__global__ void CountCircleForFish(Fishes fishes, float* buffer, int n_fishes,
+__global__ void CountCircleForFishesGpu(Fishes fishes, float* buffer, int n_fishes,
 	int n_points, int radius);

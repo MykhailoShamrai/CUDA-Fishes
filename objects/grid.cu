@@ -183,8 +183,6 @@ void Grid::CleanAfterAllCount(Fishes& fishes)
 {
 	if (onGpu)
 	{
-		//assert(VerifyCudaIfArraysAreNotTheSame(fishes.x_before_movement, fishes.x_after_movement, n_fishes));
-		//assert(VerifyCudaIfArraysAreNotTheSame(fishes.y_before_movement, fishes.y_after_movement, n_fishes));
 		checkCudaErrors(cudaMemcpy(fishes.x_before_movement, fishes.x_after_movement, n_fishes * sizeof(float), cudaMemcpyDeviceToDevice));
 		checkCudaErrors(cudaMemcpy(fishes.y_before_movement, fishes.y_after_movement, n_fishes * sizeof(float), cudaMemcpyDeviceToDevice));
 		checkCudaErrors(cudaMemcpy(fishes.x_vel_before_movement, fishes.x_vel_after_movement, n_fishes * sizeof(float), cudaMemcpyDeviceToDevice));
@@ -192,15 +190,10 @@ void Grid::CleanAfterAllCount(Fishes& fishes)
 	}
 	else
 	{
-		//assert(VerifyIfArraysAreNotTheSame(fishes.x_before_movement, fishes.x_after_movement, n_fishes));
-		//assert(VerifyIfArraysAreNotTheSame(fishes.y_before_movement, fishes.y_after_movement, n_fishes));
-		for (int i = 0; i < n_fishes; i++)
-		{
-			fishes.x_before_movement[i] = fishes.x_after_movement[i];
-			fishes.y_before_movement[i] = fishes.y_after_movement[i];
-			fishes.x_vel_before_movement[i] = fishes.x_vel_after_movement[i];
-			fishes.y_vel_before_movement[i] = fishes.y_vel_after_movement[i];
-		}
+		memcpy(fishes.x_before_movement, fishes.x_after_movement, n_fishes * sizeof(float));
+		memcpy(fishes.y_before_movement, fishes.y_after_movement, n_fishes * sizeof(float));
+		memcpy(fishes.x_vel_before_movement, fishes.x_vel_after_movement, n_fishes * sizeof(float));
+		memcpy(fishes.y_vel_before_movement, fishes.y_vel_after_movement, n_fishes * sizeof(float));
 	}
 }
 

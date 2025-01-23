@@ -10,17 +10,20 @@
 #include "../include/helpers.cuh"
 #include <cuda_gl_interop.h>
 #include "../main_loop/main_loop_gpu.cuh"
+#include "../main_loop/main_loop_cpu.cuh"
 #include <vector>
 
-#define NUMBER_OF_FISHES 2000
+#define NUMBER_OF_FISHES 20
 #define WIDTH 1600
 #define HEIGHT 900
 
-#define NUMBER_OF_POINTS_FOR_TRIANGLE 16
+#define NUMBER_OF_POINTS_FOR_CIRCLE 32
 
 #define THREAD_NUMBER 128
 
-bool withGpu = true;
+static bool withGpu = true;
+static bool withGpuChanged = false;
+static bool circleDrawing = false;
 
 using namespace std;
 
@@ -40,6 +43,18 @@ const char* fragmentShaderSource = "#version 330 core\n"
 "{\n"
 " FragColor = color;\n"
 "}\0";
+
+static void key_press_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	if (key == GLFW_KEY_C && action == GLFW_PRESS)
+	{
+		circleDrawing = !circleDrawing;
+	}
+	else if (key == GLFW_KEY_G && action == GLFW_PRESS)
+	{
+		withGpuChanged = true;
+	}
+}
 
 int main()
 {
@@ -61,6 +76,7 @@ int main()
 	}
 
 	glfwMakeContextCurrent(window);
+	glfwSetKeyCallback(window, key_press_callback);
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
@@ -132,40 +148,60 @@ int main()
 	}
 	// OpenGl stuff
 	// Main triangle that represents a fish
-	GLuint VBO_Centers, VAO_Triangles;
-	glGenBuffers(1, &VBO_Centers);
-	glGenVertexArrays(1, &VAO_Triangles);
-	glBindVertexArray(VAO_Triangles);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO_Centers);
+	GLuint VBO_Triangles_GPU, VAO_Triangles_GPU;
+	glGenBuffers(1, &VBO_Triangles_GPU);
+	glGenVertexArrays(1, &VAO_Triangles_GPU);
+	glBindVertexArray(VAO_Triangles_GPU);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_Triangles_GPU);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * NUMBER_OF_FISHES, nullptr, GL_DYNAMIC_DRAW);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 	
 	cudaGraphicsResource* cuda_vbo_res_triangles;
-	checkCudaErrors(cudaGraphicsGLRegisterBuffer(&cuda_vbo_res_triangles, VBO_Centers, cudaGraphicsRegisterFlagsWriteDiscard));
+	checkCudaErrors(cudaGraphicsGLRegisterBuffer(&cuda_vbo_res_triangles, VBO_Triangles_GPU, cudaGraphicsRegisterFlagsWriteDiscard));
 
-	GLuint VBO_Circles, VAO_Circles;
-	glGenBuffers(1, &VBO_Circles);
-	glGenVertexArrays(1, &VAO_Circles);
-	glBindVertexArray(VAO_Circles);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO_Circles);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * NUMBER_OF_POINTS_FOR_TRIANGLE * 2 * NUMBER_OF_FISHES, nullptr, GL_DYNAMIC_DRAW);
+	GLuint VBO_Circles_GPU, VAO_Circles_GPU;
+	glGenBuffers(1, &VBO_Circles_GPU);
+	glGenVertexArrays(1, &VAO_Circles_GPU);
+	glBindVertexArray(VAO_Circles_GPU);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_Circles_GPU);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * NUMBER_OF_POINTS_FOR_CIRCLE * 2 * NUMBER_OF_FISHES, nullptr, GL_DYNAMIC_DRAW);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
 	cudaGraphicsResource* cuda_vbo_res_circle;
-	checkCudaErrors(cudaGraphicsGLRegisterBuffer(&cuda_vbo_res_circle, VBO_Circles, cudaGraphicsRegisterFlagsWriteDiscard));
+	checkCudaErrors(cudaGraphicsGLRegisterBuffer(&cuda_vbo_res_circle, VBO_Circles_GPU, cudaGraphicsRegisterFlagsWriteDiscard));
 	
 	GLint firsts[NUMBER_OF_FISHES];
 	GLsizei count[NUMBER_OF_FISHES];
 
 	for (int i = 0; i < NUMBER_OF_FISHES; i++)
 	{
-		firsts[i] = i * NUMBER_OF_POINTS_FOR_TRIANGLE;
-		count[i] = NUMBER_OF_POINTS_FOR_TRIANGLE;
+		firsts[i] = i * NUMBER_OF_POINTS_FOR_CIRCLE;
+		count[i] = NUMBER_OF_POINTS_FOR_CIRCLE;
 	}
 
-	// TODO: Option struct
+	float* h_triangles_buffer = (float*)malloc(sizeof(float) * 6 * NUMBER_OF_FISHES);
+	float* h_circles_buffer = (float*)malloc(sizeof(float) * 2 * NUMBER_OF_POINTS_FOR_CIRCLE * NUMBER_OF_FISHES);
+
+	GLuint VBO_Triangles_CPU, VAO_Triangles_CPU;
+	glGenBuffers(1, &VBO_Triangles_CPU);
+	glGenVertexArrays(1, &VAO_Triangles_CPU);
+	glBindVertexArray(VAO_Triangles_CPU);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_Triangles_CPU);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * NUMBER_OF_FISHES, nullptr, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	GLuint VBO_Circles_CPU, VAO_Circles_CPU;
+	glGenBuffers(1, &VBO_Circles_CPU);
+	glGenVertexArrays(1, &VAO_Circles_CPU);
+	glBindVertexArray(VAO_Circles_CPU);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_Circles_CPU);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * NUMBER_OF_POINTS_FOR_CIRCLE * 2 * NUMBER_OF_FISHES, h_circles_buffer, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
 	Options h_options = Options();
 	Options* d_options;
 	checkCudaErrors(cudaMalloc((void**)&d_options, sizeof(Options)));
@@ -176,10 +212,6 @@ int main()
 	h_grid.h_InitialiseArraysIndicesAndFishes();
 	d_grid.d_InitialiseArraysIndicesAndFishes(h_grid.indices);
 
-	h_grid.FindCellsForFishes(h_fishes);
-	h_grid.SortCellsWithFishes();
-	h_grid.CleanStartsAndEnds();
-	h_grid.FindStartsAndEnds();
 
 
 	dim3 numBlocks((NUMBER_OF_FISHES + THREAD_NUMBER - 1) / THREAD_NUMBER);
@@ -191,6 +223,7 @@ int main()
 	cudaEvent_t start_circles, stop_circles;
 	cudaEventCreate(&start_circles);
 	cudaEventCreate(&stop_circles);
+	h_grid.CleanStartsAndEnds();
 	d_grid.CleanStartsAndEnds();
 	bool valuesChanged = false;
 	while (!glfwWindowShouldClose(window))
@@ -229,60 +262,122 @@ int main()
 
 		float* d_trianglesVertices = nullptr;
 		float* d_circlesVertices = nullptr;
+
+		// iF state of withGpu was changed it's necessary to copy from gpu to cpu last data or in other side
+		if (withGpuChanged)
+		{
+			withGpuChanged = false;
+			withGpu = !withGpu;
+			if (withGpu)
+			{
+				d_fishes.d_CopyFishesFromCPU(h_fishes);
+			}
+			else
+			{
+				h_fishes.h_CopyFishesFromGPU(d_fishes);
+			}
+		}
+
 		if (withGpu)
 		{
 			size_t size = 0;
 			checkCudaErrors(cudaGraphicsMapResources(1, &cuda_vbo_res_triangles));
 			checkCudaErrors(cudaGraphicsResourceGetMappedPointer((void**)&d_trianglesVertices, &size, cuda_vbo_res_triangles));
-			checkCudaErrors(cudaGraphicsMapResources(1, &cuda_vbo_res_circle));
-			checkCudaErrors(cudaGraphicsResourceGetMappedPointer((void**)&d_circlesVertices, &size, cuda_vbo_res_circle));
 			cudaEventRecord(start_main);
 
 			d_grid.FindCellsForFishes(d_fishes);
 			d_grid.SortCellsWithFishes();
 			d_grid.FindStartsAndEnds();
 			// Count for every fish the next position and velocity
-			CountForFishes << <numBlocks, THREAD_NUMBER >> > (d_grid, d_options, d_fishes, d_trianglesVertices, NUMBER_OF_FISHES);
+			CountForFishesGpu << <numBlocks, THREAD_NUMBER >> > (d_grid, d_options, d_fishes, d_trianglesVertices, NUMBER_OF_FISHES);
 			checkCudaErrors(cudaGetLastError());
 			checkCudaErrors(cudaDeviceSynchronize());
 			d_grid.CleanStartsAndEnds();
 			d_grid.CleanAfterAllCount(d_fishes);
 			cudaEventRecord(stop_main);
-			float milliseconds = 0;
+			float milliseconds = 0.0f;
 			cudaEventSynchronize(stop_main);
 			cudaEventElapsedTime(&milliseconds, start_main, stop_main);
 			printf("%f milliseconds for a frame\n", milliseconds);
 
-			cudaEventRecord(start_circles);
-			CountCircleForFish << <numBlocks, THREAD_NUMBER >> > (d_fishes, d_circlesVertices, NUMBER_OF_FISHES, NUMBER_OF_POINTS_FOR_TRIANGLE,
-				h_options.radiusForFishes);
-			checkCudaErrors(cudaGetLastError());
-			checkCudaErrors(cudaDeviceSynchronize());
-			cudaEventRecord(stop_circles);
-			float milliseconds_circle;
-			cudaEventSynchronize(stop_circles);
-			cudaEventElapsedTime(&milliseconds_circle, start_circles, stop_circles);
-			printf("%f milliseconds for the circles\n", milliseconds_circle);
-
 			checkCudaErrors(cudaGraphicsUnmapResources(1, &cuda_vbo_res_triangles));
-			checkCudaErrors(cudaGraphicsUnmapResources(1, &cuda_vbo_res_circle));
+
+			// Main drawing
+			int screenWidth = glGetUniformLocation(shaderProgram, "width");
+			int screenHeight = glGetUniformLocation(shaderProgram, "height");
+			int colorPosition = glGetUniformLocation(shaderProgram, "color");
+			glUseProgram(shaderProgram);
+			glUniform1f(screenWidth, WIDTH);
+			glUniform1f(screenHeight, HEIGHT);
+			glUniform4f(colorPosition, 0.0f, 1.0f, 0.0f, 1.0f);
+
+
+			glBindVertexArray(VAO_Triangles_GPU);
+			glDrawArrays(GL_TRIANGLES, 0, NUMBER_OF_FISHES * 3);
+
+			// Optional drawing of circles around
+			if (circleDrawing)
+			{
+				checkCudaErrors(cudaGraphicsMapResources(1, &cuda_vbo_res_circle));
+				checkCudaErrors(cudaGraphicsResourceGetMappedPointer((void**)&d_circlesVertices, &size, cuda_vbo_res_circle));
+
+				cudaEventRecord(start_circles);
+				CountCircleForFishesGpu << <numBlocks, THREAD_NUMBER >> > (d_fishes, d_circlesVertices,
+					NUMBER_OF_FISHES, NUMBER_OF_POINTS_FOR_CIRCLE, h_options.radiusForFishes);
+
+				checkCudaErrors(cudaGetLastError());
+				checkCudaErrors(cudaDeviceSynchronize());
+				cudaEventRecord(stop_circles);
+				float milliseconds_circle = 0.0f;
+				cudaEventSynchronize(stop_circles);
+				cudaEventElapsedTime(&milliseconds_circle, start_circles, stop_circles);
+				printf("%f milliseconds for the circles\n", milliseconds_circle);
+				checkCudaErrors(cudaGraphicsUnmapResources(1, &cuda_vbo_res_circle));
+
+				glUniform4f(colorPosition, 1.0f, 1.0f, 1.0f, 1.0f);
+				glBindVertexArray(VAO_Circles_GPU);
+				glMultiDrawArrays(GL_LINE_LOOP, firsts, count, NUMBER_OF_FISHES);
+			}
+
+		}
+		else
+		{
+			h_grid.FindCellsForFishes(h_fishes);
+			h_grid.SortCellsWithFishes();
+			h_grid.FindStartsAndEnds();
+
+			CountForFishesCpu(h_grid, h_options, h_fishes, h_triangles_buffer, NUMBER_OF_FISHES);
+
+			h_grid.CleanStartsAndEnds();
+			h_grid.CleanAfterAllCount(h_fishes);
+
+			int screenWidth = glGetUniformLocation(shaderProgram, "width");
+			int screenHeight = glGetUniformLocation(shaderProgram, "height");
+			int colorPosition = glGetUniformLocation(shaderProgram, "color");
+			glUseProgram(shaderProgram);
+			glUniform1f(screenWidth, WIDTH);
+			glUniform1f(screenHeight, HEIGHT);
+			glUniform4f(colorPosition, 0.0f, 1.0f, 0.0f, 1.0f);
+
+
+			glBindBuffer(GL_ARRAY_BUFFER, VBO_Triangles_CPU);
+			glBindVertexArray(VAO_Triangles_CPU);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * 6 * NUMBER_OF_FISHES, h_triangles_buffer);
+			glDrawArrays(GL_TRIANGLES, 0, NUMBER_OF_FISHES * 3);
+
+
+			if (circleDrawing)
+			{
+				CountCircleForFishesCpu(h_fishes, h_circles_buffer, NUMBER_OF_FISHES, NUMBER_OF_POINTS_FOR_CIRCLE, h_options.radiusForFishes);
+				glUniform4f(colorPosition, 1.0f, 1.0f, 1.0f, 1.0f);
+				glBindBuffer(GL_ARRAY_BUFFER, VBO_Circles_CPU);
+				glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * NUMBER_OF_POINTS_FOR_CIRCLE * 2 * NUMBER_OF_FISHES, h_circles_buffer);
+				glBindVertexArray(VAO_Circles_CPU);
+				glMultiDrawArrays(GL_LINE_LOOP, firsts, count, NUMBER_OF_FISHES);
+			}
 		}
 
 		
-		int screenWidth = glGetUniformLocation(shaderProgram, "width");
-		int screenHeight = glGetUniformLocation(shaderProgram, "height");
-		int colorPosition = glGetUniformLocation(shaderProgram, "color");
-		glUseProgram(shaderProgram);
-		glUniform1f(screenWidth, WIDTH);
-		glUniform1f(screenHeight, HEIGHT);
-		glUniform4f(colorPosition, 0.0f, 1.0f, 0.0f, 1.0f);
-
-		glBindVertexArray(VAO_Triangles);
-		glDrawArrays(GL_TRIANGLES, 0, NUMBER_OF_FISHES * 3);
-
-		//glUniform4f(colorPosition, 1.0f, 1.0f, 1.0f, 1.0f);
-		//glBindVertexArray(VAO_Circles);
-		//glMultiDrawArrays(GL_LINE_LOOP, firsts, count, NUMBER_OF_FISHES);
 
 		// Render with opengl
 		ImGui::Render();

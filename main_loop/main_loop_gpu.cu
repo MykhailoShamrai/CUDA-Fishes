@@ -10,7 +10,7 @@ __host__ __device__ static bool VerifyIndex(int index, int max_n)
 {
 	return index < max_n;
 }
-__global__ void CountForFishes(Grid grid, Options* options, Fishes fishes, float* buffer, int n)
+__global__ void CountForFishesGpu(Grid grid, Options* options, Fishes fishes, float* buffer, int n)
 {
 	__shared__ Options shared_options;
 	if (threadIdx.x == 0)
@@ -27,10 +27,10 @@ __global__ void CountForFishes(Grid grid, Options* options, Fishes fishes, float
 	assert(VerifyIndex(i, n));
 	int indexOfFish = fishes.CountForAFish(i, &grid, options);
 	// Hardcoded parameters for triangles
-	fishes.FindTrianglesForAFish(indexOfFish, buffer, 10, 6);
+	fishes.FindTrianglesForAFish(indexOfFish, buffer);
 }
 
-__global__ void CountCircleForFish(Fishes fishes, float* buffer, int n_fishes, int n_points, int radius)
+__global__ void CountCircleForFishesGpu(Fishes fishes, float* buffer, int n_fishes, int n_points, int radius)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 	if (i >= n_fishes)

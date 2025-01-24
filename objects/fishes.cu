@@ -5,7 +5,7 @@
 #include "../third_party/cuda-samples/helper_math.h"
 #include "grid.cuh"
 #include "options.cuh"
-#include "../include/helpers.cuh"
+#include "../includes/helpers.cuh"
 #include <cmath>
 
 Fishes::Fishes(int n, bool onGpu): n(n), onGpu(onGpu)

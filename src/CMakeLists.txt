@@ -24,18 +24,18 @@ set(IMGUI_SOURCE_FILES	../third_party/imgui/imgui_impl_glfw.cpp
 
 add_executable (CUDA-Fishes "main.cu"
 					${IMGUI_SOURCE_FILES}
+					"../includes/helpers.cu"
 					"../objects/fishes.cu"
 					"../objects/grid.cu"
-					"../include/helpers.cu"
 					"../main_loop/main_loop_gpu.cu"
 					"../main_loop/main_loop_cpu.cu")
 
 target_include_directories(CUDA-Fishes PRIVATE 
-	../third_party/glfw/include
-	../third_party/glad/include
+	"../third_party/glfw/include"
+	"../third_party/glad/include"
 	../third_party/imgui
 	../third_party/cuda-samples
-	../include
+	../includes
 	../objects)
 
 target_link_libraries(CUDA-Fishes PRIVATE 

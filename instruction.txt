@@ -1,0 +1,19 @@
+Instrukcja do program CUDA-Fishes
+
+Projekt jest zbierany za pomocą Cmake, można zebrać projekt przy pomocy Visual Studio. Wszystko potrzebne do uruchomienie zostało
+dostarczone do archiwum. Wystarczy otworzyć fołder w Visual Studio i poczekać aż Cmake poprawnie się zbuduje. Następnie trzeba w 
+Visual Studio uruchomić program przy pomocy zielonej strzałki wybiorąc poprzednio x64 Release i jako target CUDA-Fishes.exe. 
+Po skompilowaniu .exe file będzie znajdował się w fołderze ./out/build/x64-release. Można uruchomić .exe plik również z linii poleceń.
+Program przyjmuję jeden argument wejęsciowy - lczba rybek. Flaga -s i liczba rybek ustawia ile rybek będzie na ekranie.
+
+Okno startowo pojawia się z otwartym interfejsem graficznym, który można ukryć. Automatycznie jest włączona symulacja, ale można 
+ją wyłączyć wsiskając Space lub zaznaczając odpowiedni checkBox w GUI. Z klawiszy do sterowania też są destępne inne klawisze.
+Klawisz C włancza tryb odrysowywania zasięgu widzenia rybkim ten sam przycisk wyłancza tą opcję. Przycisk G przełancza z trybu CPU na GPU
+i odwrornie. Poniżej w GUI można zobaczyć kilka metryk, takich jak ilosć klatek na sekundę oraz czas w milisekundach na wzkonanie głównej
+funkcji obliczenia. Klawisz F włancza tryb "Fear", czyli daje możliwosć jeździć kursorem po ekranie i straszyć rzbki.
+W GUI też jest przycisk Switch. On jak G przełancza tryby obliczenia. 
+
+Dużą ilosć parametrów, takich jak współczynniki dla głównych zasad interakcji można zmienić dynamicznie w GUI. Zakresy zostały dobrane przeze mnie 
+eksperymentalnie. U mnie rybki starają się odpływać od krawędzi ekranu, odległosć i siłę tego działana można regułować. Też jest taki parametr
+jak promień wewnętrzny. Sprawa w tym, że przyjąłem że rzbki próbują niektóre zasady stosować (np alignment) tylko to rybek w polu widzenia,
+ale nie tych co są aż tak blisko. Ale już separation działa tylko na te bliskie rybki.  

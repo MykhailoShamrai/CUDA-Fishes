@@ -7,11 +7,12 @@
 #include "../objects/fishes.cuh"
 #include "../objects/grid.cuh"
 #include "../objects/options.cuh"
-#include "../include/helpers.cuh"
+#include "../includes/helpers.cuh"
 #include <cuda_gl_interop.h>
 #include "../main_loop/main_loop_gpu.cuh"
 #include "../main_loop/main_loop_cpu.cuh"
 #include <vector>
+#include <string>
 
 #define WIDTH 1600
 #define HEIGHT 900
@@ -30,6 +31,7 @@ static bool fearingWithCursor = false;
 static bool withGpu = true;
 static bool withGpuChanged = false;
 static bool circleDrawing = false;
+static bool isSimulationRunning = true;
 
 using namespace std;
 
@@ -56,13 +58,17 @@ static void key_press_callback(GLFWwindow* window, int key, int scancode, int ac
 	{
 		circleDrawing = !circleDrawing;
 	}
-	else if (key == GLFW_KEY_G && action == GLFW_PRESS)
+	else if (key == GLFW_KEY_G && action == GLFW_PRESS && isSimulationRunning)
 	{
 		withGpuChanged = true;
 	}
 	else if (key == GLFW_KEY_F && action == GLFW_PRESS)
 	{
 		fearingWithCursor = !fearingWithCursor;
+	}
+	else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+	{
+		isSimulationRunning = !isSimulationRunning;
 	}
 }
 
@@ -79,8 +85,39 @@ static void framebuffer_size_callback(GLFWwindow*, int new_width, int new_height
 	glViewport(0, 0, new_width, new_height);
 }
 
-int main()
+char* get_cmd_option(char** begin, char** end, const std::string& option)
 {
+	char** itr = std::find(begin, end, option);
+	if (itr != end && ++itr != end)
+	{
+		return *itr;
+	}
+	return 0;
+}
+
+bool cmd_option_exists(char** begin, char** end, const std::string& option)
+{
+	return std::find(begin, end, option) != end;
+}
+
+int main(int argc, char** argv)
+{
+	if (cmd_option_exists(argv, argv + argc, "-n"))
+	{
+		try
+		{
+			char* val = get_cmd_option(argv, argv + argc, "-n");
+			int num_fishes_tmp = std::stoi(val, 0);
+			if (num_fishes_tmp <= 0)
+				throw std::invalid_argument("Received negative value or 0!");
+			numberOfFishes = num_fishes_tmp;
+		}
+		catch (const std::exception& ex)
+		{
+			fprintf(stderr, "Wrong argument for number of fishes! %s Default value = %d is set\n", ex.what(), numberOfFishes);
+		}
+	}
+
 	// Initialization
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -267,13 +304,24 @@ int main()
 		valuesChanged |= ImGui::SliderFloat("Force for wall avoidance", &h_options.forceForWallAvoidance, 0.1f, 0.5f);
 		valuesChanged |= ImGui::SliderFloat("Range to border", &h_options.rangeToBorderToStartTurn, 50.0f, 200.0f);
 		valuesChanged |= ImGui::SliderFloat("Fear of cursor", &h_options.powerOfFearForCursor, 0.01f, 0.1f, "%.3f");
+
+		ImGui::Checkbox("Is animation running", &isSimulationRunning);
 		ImGui::BeginDisabled();
 		ImGui::Checkbox("GPU", &withGpu);
 		ImGui::EndDisabled();
+		if (!isSimulationRunning)
+		{
+			ImGui::BeginDisabled();
+		}
 		if (ImGui::Button("Switch"))
 		{
 			withGpuChanged = true;
 		}
+		if (!isSimulationRunning)
+		{
+			ImGui::EndDisabled();
+		}
+
 		ImGui::Checkbox("Drawing of circles", &circleDrawing);
 		ImGui::Checkbox("Cursor interaction", &fearingWithCursor);
 		if (ImGui::Button("Reset to Defaults"))
@@ -313,29 +361,33 @@ int main()
 			}
 		}
 
+
 		if (withGpu)
 		{
 			size_t size = 0;
-			checkCudaErrors(cudaGraphicsMapResources(1, &cuda_vbo_res_triangles));
-			checkCudaErrors(cudaGraphicsResourceGetMappedPointer((void**)&d_trianglesVertices, &size, cuda_vbo_res_triangles));
-			cudaEventRecord(start_main);
+			if (isSimulationRunning)
+			{
+				checkCudaErrors(cudaGraphicsMapResources(1, &cuda_vbo_res_triangles));
+				checkCudaErrors(cudaGraphicsResourceGetMappedPointer((void**)&d_trianglesVertices, &size, cuda_vbo_res_triangles));
+				cudaEventRecord(start_main);
 
-			d_grid.FindCellsForFishes(d_fishes);
-			d_grid.SortCellsWithFishes();
-			d_grid.FindStartsAndEnds();
-			// Count for every fish the next position and velocity
-			CountForFishesGpu << <numBlocks, THREAD_NUMBER >> > (d_grid, d_options, d_fishes, d_trianglesVertices, numberOfFishes,
-				cursorPosX, cursorPosY, fearingWithCursor);
-			checkCudaErrors(cudaGetLastError());
-			checkCudaErrors(cudaDeviceSynchronize());
-			d_grid.CleanStartsAndEnds();
-			d_grid.CleanAfterAllCount(d_fishes);
-			cudaEventRecord(stop_main);
-			float milliseconds = 0.0f;
-			cudaEventSynchronize(stop_main);
-			cudaEventElapsedTime(&milliseconds, start_main, stop_main);
-			ImGui::Text("milliseconds for main kernel: %.4f", milliseconds);
-			checkCudaErrors(cudaGraphicsUnmapResources(1, &cuda_vbo_res_triangles));
+				d_grid.FindCellsForFishes(d_fishes);
+				d_grid.SortCellsWithFishes();
+				d_grid.FindStartsAndEnds();
+				// Count for every fish the next position and velocity
+				CountForFishesGpu << <numBlocks, THREAD_NUMBER >> > (d_grid, d_options, d_fishes, d_trianglesVertices, numberOfFishes,
+					cursorPosX, cursorPosY, fearingWithCursor);
+				checkCudaErrors(cudaGetLastError());
+				checkCudaErrors(cudaDeviceSynchronize());
+				d_grid.CleanStartsAndEnds();
+				d_grid.CleanAfterAllCount(d_fishes);
+				cudaEventRecord(stop_main);
+				float milliseconds = 0.0f;
+				cudaEventSynchronize(stop_main);
+				cudaEventElapsedTime(&milliseconds, start_main, stop_main);
+				ImGui::Text("milliseconds for main kernel: %.4f", milliseconds);
+				checkCudaErrors(cudaGraphicsUnmapResources(1, &cuda_vbo_res_triangles));
+			}
 
 			// Main drawing
 			int screenWidth = glGetUniformLocation(shaderProgram, "width");
@@ -377,20 +429,24 @@ int main()
 		}
 		else
 		{
-			double startOfFunction = glfwGetTime();
-			h_grid.FindCellsForFishes(h_fishes);
-			h_grid.SortCellsWithFishes();
-			h_grid.FindStartsAndEnds();
+			if (isSimulationRunning)
+			{
+				double startOfFunction = glfwGetTime();
+				h_grid.FindCellsForFishes(h_fishes);
+				h_grid.SortCellsWithFishes();
+				h_grid.FindStartsAndEnds();
 
-			CountForFishesCpu(h_grid, h_options, h_fishes, h_triangles_buffer, numberOfFishes, cursorPosX, cursorPosY,
-				fearingWithCursor);
+				CountForFishesCpu(h_grid, h_options, h_fishes, h_triangles_buffer, numberOfFishes, cursorPosX, cursorPosY,
+					fearingWithCursor);
 
-			h_grid.CleanStartsAndEnds();
-			h_grid.CleanAfterAllCount(h_fishes);
+				h_grid.CleanStartsAndEnds();
+				h_grid.CleanAfterAllCount(h_fishes);
 
-			double endOfFunction = glfwGetTime();
-			double elapsedTime = (endOfFunction - startOfFunction) * 1000;
-			ImGui::Text("milliseconds for main function: %.4f", elapsedTime);
+				double endOfFunction = glfwGetTime();
+				double elapsedTime = (endOfFunction - startOfFunction) * 1000;
+				ImGui::Text("milliseconds for main function: %.4f", elapsedTime);
+			}
+
 			int screenWidth = glGetUniformLocation(shaderProgram, "width");
 			int screenHeight = glGetUniformLocation(shaderProgram, "height");
 			int colorPosition = glGetUniformLocation(shaderProgram, "color");
@@ -411,7 +467,7 @@ int main()
 				double startOfCirclesGeneration = glfwGetTime();
 				CountCircleForFishesCpu(h_fishes, h_circles_buffer, numberOfFishes, NUMBER_OF_POINTS_FOR_CIRCLE, h_options.radiusForFishes);
 				double endOfCirclesGeneration = glfwGetTime();
-				elapsedTime = (endOfCirclesGeneration - startOfCirclesGeneration) * 1000;
+				double elapsedTime = (endOfCirclesGeneration - startOfCirclesGeneration) * 1000;
 				ImGui::Text("milliseconds for circles generation: %.4f", elapsedTime);
 				glUniform4f(colorPosition, 1.0f, 1.0f, 1.0f, 1.0f);
 				glBindBuffer(GL_ARRAY_BUFFER, VBO_Circles_CPU);
@@ -420,6 +476,7 @@ int main()
 				glMultiDrawArrays(GL_LINE_LOOP, firsts, count, numberOfFishes);
 			}
 		}
+		
 
 	
 		// Render with opengl

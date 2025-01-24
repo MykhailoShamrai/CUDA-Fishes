@@ -1,7 +1,7 @@
 #include "grid.cuh"
 #include <stdlib.h>
 #include <cuda_runtime.h>
-#include "../include/helpers.cuh"
+#include "../includes/helpers.cuh"
 #include <assert.h>
 #include <thrust/transform.h>
 #include <thrust/functional.h>

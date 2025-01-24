@@ -12,5 +12,5 @@
         }                                                    \
     } while (0)  
 
-__host__ __device__ float rand_float(float min, float max);
+float rand_float(float min, float max);
 

@@ -3,8 +3,8 @@
 #include <cassert>
 
 
-extern struct Options;
-extern struct Grid;
+struct Options;
+struct Grid;
 
 struct Fishes
 {

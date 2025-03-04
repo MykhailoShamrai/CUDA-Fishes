@@ -38,17 +38,19 @@ target_include_directories(CUDA-Fishes PRIVATE
 	../includes
 	../objects)
 
+
+find_package("OpenGL" REQUIRED)
+
 target_link_libraries(CUDA-Fishes PRIVATE 
-	glfw glad opengl32 ${CMAKE_CUDA_LIBRARIES})
+	glfw glad ${OPENGL_gl_LIBRARY} ${CMAKE_CUDA_LIBRARIES})
 
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
 CUDA_SEPARABLE_COMPILATION ON
-CUDA_ARCHITECTURES ${CMAKE_CUDA_ARCHITECTURES}
+
 )
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET CUDA-Fishes PROPERTY CXX_STANDARD 20)
 endif()
 
-# TODO: Add tests and install targets if needed.

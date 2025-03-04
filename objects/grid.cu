@@ -61,6 +61,24 @@ static bool verifyCudaArrayIndices(int* array, int n)
 	return verifyArrayIndices(vec.data(), n);
 }
 
+static bool verifyCells(int* array, int n, int n_x, int n_y)
+{
+	int number = n_x * n_y;
+	for (int i = 0; i < n; i++)
+	{
+		if (array[i] < 0 || array[i] >= number)
+			return false;
+	}
+	return true;
+}
+
+static bool verifyCudaArrayIndicesCells(int* array, int n, int n_x, int n_y)
+{
+	std::vector<int> vec(n, 0);
+	checkCudaErrors(cudaMemcpy(vec.data(), array, n * sizeof(int), cudaMemcpyDeviceToHost));
+	return verifyCells(vec.data(), n, n_x, n_y);
+}
+
 void Grid::h_InitialiseArraysIndicesAndFishes()
 {
 	for (int i = 0; i < n_fishes; i++)
@@ -76,9 +94,9 @@ void Grid::d_InitialiseArraysIndicesAndFishes(int* initialisedIndexArray)
 {
 	assert(initialisedIndexArray);
 	assert(verifyArrayIndices(initialisedIndexArray, n_fishes));
-	checkCudaErrors(cudaMemcpy(indices, initialisedIndexArray, n_fishes * sizeof(float), cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(indices, initialisedIndexArray, n_fishes * sizeof(int), cudaMemcpyHostToDevice));
 	assert(verifyCudaArrayIndices(indices, n_fishes));
-	checkCudaErrors(cudaMemcpy(fish_id, indices, n_fishes * sizeof(float), cudaMemcpyDeviceToDevice));
+	checkCudaErrors(cudaMemcpy(fish_id, initialisedIndexArray, n_fishes * sizeof(int), cudaMemcpyHostToDevice));
 	assert(verifyCudaArrayIndices(fish_id, n_fishes));
 }
 
@@ -96,6 +114,7 @@ void Grid::FindCellsForFishes(Fishes& fishes)
 		thrust::transform(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, dev_ptr_cell_id, func);
 		cudaDeviceSynchronize();
 		assert(verifyCudaArrayIndices(fish_id, n_fishes));
+		assert(verifyCudaArrayIndicesCells(cell_id, n_fishes, n_x_cells, n_y_cells));
 		thrust::transform(thrust::device, dev_ptr_indices, dev_ptr_indices + n_fishes, dev_ptr_quarters, funcQ);
 		cudaDeviceSynchronize();
 		assert(verifyCudaArrayIndices(fish_id, n_fishes));

@@ -23,7 +23,7 @@ static int screen_height = HEIGHT;
 
 #define THREAD_NUMBER 128
 
-static int numberOfFishes = 10000;
+static int numberOfFishes = 100;
 float cursorPosX = 0.0f;
 float cursorPosY = 0.0f;
 
